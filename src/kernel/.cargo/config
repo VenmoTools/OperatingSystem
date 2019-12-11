@@ -1,0 +1,3 @@
+# build settings
+[build]
+target = "x86-64.json"
