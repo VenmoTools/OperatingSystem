@@ -1,14 +1,13 @@
-use bitflags::bitflags;
-use core::fmt;
-
-use crate::bits::BitOpt;
-use crate::ia_32e::descriptor::tss::TaskStateSegment;
-use crate::ia_32e::PrivilegedLevel;
-
 pub mod gdt;
 pub mod idt;
 pub mod tss;
 
+
+use crate::ia_32e::PrivilegedLevel;
+use crate::bits::BitOpt;
+use bitflags::bitflags;
+use core::fmt;
+use crate::ia_32e::descriptor::tss::TaskStateSegment;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 #[repr(transparent)]
@@ -40,25 +39,14 @@ impl fmt::Debug for SegmentSelector {
 bitflags! {
     /// GDT 描述符标志位
    pub struct DescriptorFlags: u64 {
-        /// 数据段描述符，可写
         const WRITABLE          = 1 << 41;
-        ///
-        /// Marks a code segment as “conforming”. This influences the privilege checks that
-        /// occur on control transfers.
         const CONFORMING        = 1 << 42;
-        /// 代码段描述符
         const EXECUTABLE        = 1 << 43;
-        /// This flag must be set for user segments (in contrast to system segments).
         const USER_SEGMENT      = 1 << 44;
-        /// Must be set for any segment, causes a segment not present exception if not set.
         const PRESENT           = 1 << 47;
-        /// Must be set for long mode code segments.
         const LONG_MODE         = 1 << 53;
-
-        /// The DPL for this descriptor is Ring 3
         const DPL_RING_3        = 3 << 45;
     }
-
 }
 
 #[derive(Debug, Clone)]
@@ -108,8 +96,8 @@ impl Descriptor {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-#[repr(C, packed)]
+#[derive(Debug,Copy, Clone)]
+#[repr(C,packed)]
 pub struct DescriptorTablePointer {
     /// 描述符表大小
     pub limit: u16,

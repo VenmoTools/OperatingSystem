@@ -1,5 +1,6 @@
 use core::ops::Range;
 
+
 pub trait BitOpt {
     fn length() -> usize;
     fn get_bit(&self, size: usize) -> bool;

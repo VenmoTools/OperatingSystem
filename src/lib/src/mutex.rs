@@ -1,9 +1,10 @@
-use core::cell::UnsafeCell;
-use core::default::Default;
-use core::marker::Sync;
-use core::ops::{Deref, DerefMut, Drop};
-use core::option::Option::{self, None, Some};
 use core::sync::atomic::{AtomicBool, Ordering, spin_loop_hint};
+use core::cell::UnsafeCell;
+use core::marker::Sync;
+use core::ops::{Drop, Deref, DerefMut};
+use core::option::Option::{self, None, Some};
+use core::default::Default;
+use core::fmt;
 
 // 在编译时已经确定大小
 // 所有参数都必须实现了Sized绑定
@@ -12,7 +13,7 @@ pub struct Mutex<T: ?Sized> {
     lock: AtomicBool,
     data: UnsafeCell<T>,
 }
-
+#[derive(Debug)]
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     lock: &'a AtomicBool,
     data: &'a mut T,
@@ -38,6 +39,20 @@ impl<T> Mutex<T> {
 unsafe impl<T: ?Sized + Sync> Sync for Mutex<T> {}
 
 unsafe impl<T: ?Sized + Sync> Send for Mutex<T> {}
+
+impl<T: Sized + fmt::Debug> fmt::Debug for Mutex<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
+    {
+        match self.try_lock()
+            {
+                Some(guard) => write!(f, "Mutex {{ data: ")
+                    .and_then(|()| (&*guard).fmt(f))
+                    .and_then(|()| write!(f, "}}")),
+                None => write!(f, "Mutex {{ <locked> }}"),
+            }
+    }
+}
 
 impl<T: ?Sized> Mutex<T> {
     fn obtain_lock(&self) {

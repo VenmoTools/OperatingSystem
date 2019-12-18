@@ -1,8 +1,9 @@
-use crate::ia_32e::descriptor::DescriptorTablePointer;
 use crate::ia_32e::descriptor::SegmentSelector;
+use crate::ia_32e::descriptor::DescriptorTablePointer;
+
 
 #[inline]
-pub unsafe fn ldgt(gdt: &DescriptorTablePointer) {
+pub unsafe fn ldgt(gdt:&DescriptorTablePointer){
     asm!("lgdt ($0)" :: "r" (gdt) : "memory");
 }
 

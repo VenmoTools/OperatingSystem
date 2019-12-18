@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use pic8259_simple::ChainedPics;
 use spin;
 /// 当一个异常发生后，CPU大概会做一下操作
@@ -22,7 +21,9 @@ use spin;
 /// 在x86_64位系统中
 ///     Preserved寄存器（被调用者保存）：rbp, rbx, rsp, r12, r13, r14, r15
 ///     Scratch 寄存器 （调用者保存） ：rax, rcx, rdx, rsi, rdi, r8, r9, r10, r11
-use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
+use system::ia_32e::descriptor::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
+
+use lazy_static::lazy_static;
 
 use crate::{loop_hlt, print, println};
 use crate::gdt;

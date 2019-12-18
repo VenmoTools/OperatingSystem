@@ -1,5 +1,6 @@
-use crate::ia_32e::descriptor::{Descriptor, DescriptorTablePointer, SegmentSelector};
+use crate::ia_32e::descriptor::{Descriptor, SegmentSelector, DescriptorTablePointer};
 use crate::ia_32e::PrivilegedLevel;
+
 
 #[derive(Debug, Clone)]
 pub struct GlobalDescriptorTable {

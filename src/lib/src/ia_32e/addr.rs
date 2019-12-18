@@ -1,10 +1,9 @@
-use core::convert::{Into, TryInto};
-use core::fmt;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
+use crate::bits::BitOpt;
 use core::result::Result;
 use ux::*;
-
-use crate::bits::BitOpt;
+use core::fmt;
+use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::convert::{Into, TryInto};
 
 /// Virtual Address 虚拟地址
 /// IA-32e模型线性地址的寻址能力只有48位，第48位用于线性地址寻址，高16位作为符号扩展
@@ -98,7 +97,7 @@ impl VirtAddr {
 
 
     /// 创建全0地址
-    pub fn zero() -> VirtAddr {
+    pub const fn zero() -> VirtAddr {
         VirtAddr(0)
     }
 
@@ -274,11 +273,11 @@ pub fn align_up(addr: u64, align: u64) -> u64 {
         (addr | mask) + 1
     }
 }
-
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct PhysAddr(u64);
 
+#[derive(Debug)]
 pub struct NoInvalidPhysAddr(u64);
 
 impl PhysAddr {
@@ -316,6 +315,7 @@ impl PhysAddr {
     {
         self.align_down(align) == self
     }
+
 }
 
 impl fmt::Debug for PhysAddr {
