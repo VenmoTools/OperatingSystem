@@ -91,3 +91,5 @@ http://www.bioscentral.com
 
 # License
 Source code  is under the Apache License.
+The `src/lib` code is reference [rust-osdev](https://github.com/rust-osdev/x86_64)
+
