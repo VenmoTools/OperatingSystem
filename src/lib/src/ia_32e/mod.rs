@@ -2,6 +2,7 @@
 pub mod addr;
 pub mod descriptor;
 pub mod instructions;
+pub mod cpu;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]

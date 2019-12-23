@@ -1,4 +1,6 @@
 use crate::bits::BitOpt;
+use crate::ia_32e::cpu::pic::ChainedPics;
+use crate::ia_32e::cpu::port::InOut;
 
 #[test]
 fn length_test() {

@@ -22,7 +22,7 @@ use core::ops::{Deref, Index, IndexMut};
 pub struct InterruptStackFrameValue {
     pub instruction_pointer: VirtAddr,
     pub code_segment: u64,
-    pub eflags: u64,
+    pub rflags: u64,
     pub stack_pointer: VirtAddr,
     pub stack_segment: u64,
 }
@@ -39,7 +39,7 @@ impl fmt::Debug for InterruptStackFrameValue {
         let mut s = f.debug_struct("InterruptStackFrame");
         s.field("instruction_pointer", &self.instruction_pointer);
         s.field("code_segment", &self.code_segment);
-        s.field("cpu_flags", &Hex(self.eflags));
+        s.field("cpu_flags", &Hex(self.rflags));
         s.field("stack_pointer", &self.stack_pointer);
         s.field("stack_segment", &self.stack_segment);
         s.finish()
@@ -56,6 +56,7 @@ bitflags! {
         const INSTRUCTION_FETCH = 1 << 4;
     }
 }
+
 #[repr(C)]
 pub struct InterruptStackFrame {
     value: InterruptStackFrameValue,
@@ -82,7 +83,7 @@ impl fmt::Debug for InterruptStackFrame {
 }
 
 pub type HandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame);
-pub type HandlerFuncWithErrCode = extern "x86-interrupt" fn(&mut InterruptStackFrame,code: u64);
+pub type HandlerFuncWithErrCode = extern "x86-interrupt" fn(&mut InterruptStackFrame, code: u64);
 pub type PageFaultHandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame, code: PageFaultErrorCode);
 
 
@@ -125,7 +126,7 @@ pub struct Entry<F> {
     pointer_middle: u16,
     pointer_high: u32,
     reserved: u32,
-    phantom: PhantomData<F>,
+    handler_func: PhantomData<F>,
 }
 
 impl<F> Entry<F> {
@@ -137,7 +138,7 @@ impl<F> Entry<F> {
             pointer_middle: 0,
             pointer_high: 0,
             reserved: 0,
-            phantom: PhantomData,
+            handler_func: PhantomData,
         }
     }
 
@@ -156,39 +157,25 @@ impl<F> Entry<F> {
 
 
 #[cfg(target_arch = "x86_64")]
-impl Entry<HandlerFunc>{
-    pub fn set_handler_fn(&mut self, handler:HandlerFunc) -> &mut EntryOptions{
+impl Entry<HandlerFunc> {
+    pub fn set_handler_fn(&mut self, handler: HandlerFunc) -> &mut EntryOptions {
         self.set_handler_addr(handler as u64)
     }
 }
 
 #[cfg(target_arch = "x86_64")]
-impl Entry<HandlerFuncWithErrCode>{
-    pub fn set_handler_fn(&mut self, handler:HandlerFuncWithErrCode) -> &mut EntryOptions{
-        self.set_handler_addr(handler as u64)
-    }
-}
-#[cfg(target_arch = "x86_64")]
-impl Entry<PageFaultHandlerFunc>{
-    pub fn set_handler_fn(&mut self, handler:PageFaultHandlerFunc) -> &mut EntryOptions{
+impl Entry<HandlerFuncWithErrCode> {
+    pub fn set_handler_fn(&mut self, handler: HandlerFuncWithErrCode) -> &mut EntryOptions {
         self.set_handler_addr(handler as u64)
     }
 }
 
-//macro_rules! impl_set_handler_func {
-//    ( $h:ty ) => {
-//        #[cfg(target_arch = "x86_64")]
-//        impl Entry<$h>{
-//            pub fn set_handler_fn(&mut self, handler:$h) -> &mut EntryOptions{
-//                self.set_handler_addr(handler as u64)
-//            }
-//        }
-//    };
-//}
-//
-//impl_set_handler_func!(HandlerFunc);
-//impl_set_handler_func!(HandlerFuncWithErrCode);
-//impl_set_handler_func!(PageFaultHandlerFunc);
+#[cfg(target_arch = "x86_64")]
+impl Entry<PageFaultHandlerFunc> {
+    pub fn set_handler_fn(&mut self, handler: PageFaultHandlerFunc) -> &mut EntryOptions {
+        self.set_handler_addr(handler as u64)
+    }
+}
 
 
 #[allow(missing_debug_implementations)]
@@ -196,56 +183,54 @@ impl Entry<PageFaultHandlerFunc>{
 #[repr(C)]
 #[repr(align(16))]
 pub struct InterruptDescriptorTable {
+    /// #DE
     pub divide_by_zero: Entry<HandlerFunc>,
-
+    /// #DB
     pub debug: Entry<HandlerFunc>,
-
+    /// NMI 中断
     pub non_maskable_interrupt: Entry<HandlerFunc>,
-
+    /// #BP
     pub breakpoint: Entry<HandlerFunc>,
-
+    /// #OF
     pub overflow: Entry<HandlerFunc>,
-
+    /// #BR
     pub bound_range_exceeded: Entry<HandlerFunc>,
-
+    /// #UD
     pub invalid_opcode: Entry<HandlerFunc>,
-
+    /// #NM
     pub device_not_available: Entry<HandlerFunc>,
-
+    /// #DF
     pub double_fault: Entry<HandlerFuncWithErrCode>,
-
+    /// 协处理器段溢出
     coprocessor_segment_overrun: Entry<HandlerFunc>,
-
+    /// #TS
     pub invalid_tss: Entry<HandlerFuncWithErrCode>,
-
+    /// #NP
     pub segment_not_present: Entry<HandlerFuncWithErrCode>,
-
+    /// #SS
     pub stack_segment_fault: Entry<HandlerFuncWithErrCode>,
-
+    /// #GP
     pub general_protection_fault: Entry<HandlerFuncWithErrCode>,
-
+    /// #PF
     pub page_fault: Entry<PageFaultHandlerFunc>,
-
+    /// 保留
     reserved_1: Entry<HandlerFunc>,
-
+    /// #MF
     pub x87_floating_point: Entry<HandlerFunc>,
-
+    /// #AC
     pub alignment_check: Entry<HandlerFuncWithErrCode>,
-
+    /// #MC
     pub machine_check: Entry<HandlerFunc>,
-
+    /// #XM
     pub simd_floating_point: Entry<HandlerFunc>,
-
+    /// #VE
     pub virtualization: Entry<HandlerFunc>,
-
+    /// 22-31 Intel保留使用
     reserved_2: [Entry<HandlerFunc>; 9],
-
     pub security_exception: Entry<HandlerFuncWithErrCode>,
-
     reserved_3: Entry<HandlerFunc>,
-
+    /// 用户自定义中断
     interrupts: [Entry<HandlerFunc>; 256 - 32],
-
 }
 
 impl InterruptDescriptorTable {
@@ -300,7 +285,6 @@ impl InterruptDescriptorTable {
         self.alignment_check = Entry::missing();
         self.machine_check = Entry::missing();
         self.simd_floating_point = Entry::missing();
-        self.virtualization = Entry::missing();
         self.reserved_2 = [Entry::missing(); 9];
         self.security_exception = Entry::missing();
         self.reserved_3 = Entry::missing();
@@ -344,7 +328,7 @@ impl Index<usize> for InterruptDescriptorTable {
             19 => &self.simd_floating_point,
             20 => &self.virtualization,
             i @ 32..=255 => &self.interrupts[i - 32],
-            i @ 15 | i @ 31 | i @ 21..=29 => panic!("entry {} is reserved", i),
+            i @ 15 | i @ 31 | i @ 22..=29 => panic!("entry {} is reserved", i),
             i @ 8 | i @ 10..=14 | i @ 17 | i @ 30 => {
                 panic!("entry {} is an exception with error code", i)
             }
@@ -370,7 +354,7 @@ impl IndexMut<usize> for InterruptDescriptorTable {
             19 => &mut self.simd_floating_point,
             20 => &mut self.virtualization,
             i @ 32..=255 => &mut self.interrupts[i - 32],
-            i @ 15 | i @ 31 | i @ 21..=29 => panic!("entry {} is reserved", i),
+            i @ 15 | i @ 31 | i @ 22..=29 => panic!("entry {} is reserved", i),
             i @ 8 | i @ 10..=14 | i @ 17 | i @ 30 => {
                 panic!("entry {} is an exception with error code", i)
             }

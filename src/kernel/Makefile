@@ -14,5 +14,8 @@ boot:
 run: boot
 	qemu-system-x86_64 -drive format=raw,file=$(IMAGE)
 
+debug: boot
+	qemu-system-x86_64 -drive format=raw,file=$(IMAGE) -append "root=/dev/ram console=ttyS0 rdinit=/sbin/init mem=1024M" -S -s
+
 test:
 	$(GO) $(TEST_FLAGS)

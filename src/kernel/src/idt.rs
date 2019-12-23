@@ -1,5 +1,4 @@
 use pic8259_simple::ChainedPics;
-use spin;
 /// 当一个异常发生后，CPU大概会做一下操作
 /// 1. 将某个寄存器的值压入栈中，其中包含指令寄存器和RFLAGS寄存器
 /// 2. 从IDT中读取响应的条目，例如当发生了段错误后CPU会读取第13号异常
@@ -22,7 +21,9 @@ use spin;
 ///     Preserved寄存器（被调用者保存）：rbp, rbx, rsp, r12, r13, r14, r15
 ///     Scratch 寄存器 （调用者保存） ：rax, rcx, rdx, rsi, rdi, r8, r9, r10, r11
 use system::ia_32e::descriptor::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
+use system::mutex::Mutex;
 
+//use system::ia_32e::cpu::pic::ChainedPics;
 use lazy_static::lazy_static;
 
 use crate::{loop_hlt, print, println};
@@ -32,7 +33,7 @@ pub const PIC_A_OFFSET: u8 = 32;
 pub const PIC_B_OFFSET: u8 = PIC_A_OFFSET + 8;
 
 // 使用Mutex可以安全操作内部可变的数据
-pub static PICS: spin::Mutex<ChainedPics> = spin::Mutex::new(unsafe { ChainedPics::new(PIC_A_OFFSET, PIC_B_OFFSET) });
+pub static PICS: Mutex<ChainedPics> = Mutex::new(unsafe { ChainedPics::new(PIC_A_OFFSET, PIC_B_OFFSET) });
 
 
 
@@ -41,6 +42,23 @@ lazy_static! {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint);
         idt.page_fault.set_handler_fn(page_fault);
+        idt.divide_by_zero.set_handler_fn(divide_by_zero);
+        idt.invalid_tss.set_handler_fn(invalid_tss);
+        idt.security_exception.set_handler_fn(security_exception);
+        idt.segment_not_present.set_handler_fn(segment_not_present);
+        idt.alignment_check.set_handler_fn(alignment_check);
+        idt.bound_range_exceeded.set_handler_fn(bound_range_exceeded);
+        idt.device_not_available.set_handler_fn(device_not_available);
+        idt.general_protection_fault.set_handler_fn(general_protection_fault);
+        idt.invalid_opcode.set_handler_fn(invalid_opcode);
+        idt.machine_check.set_handler_fn(machine_check);
+        idt.non_maskable_interrupt.set_handler_fn(non_maskable_interrupt);
+        idt.virtualization.set_handler_fn(virtualization);
+        idt.x87_floating_point.set_handler_fn(x87_floating_point);
+        idt.stack_segment_fault.set_handler_fn(stack_segment_fault);
+        idt.simd_floating_point.set_handler_fn(simd_floating_point);
+        idt.overflow.set_handler_fn(overflow);
+        idt.debug.set_handler_fn(debug);
         // 在IDT中为双重错误处理程序设置堆栈索引
         unsafe {
             idt.double_fault.set_handler_fn(double_fault).set_stack_index(gdt::DOUBLE_FAULT_LIST_INDEX);
@@ -129,6 +147,75 @@ extern "x86-interrupt" fn keyboard_interrupt(_stackframe: &mut InterruptStackFra
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::KeyBoard.as_u8());
     }
+}
+
+
+extern "x86-interrupt" fn divide_by_zero(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:divide_by_zero\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn non_maskable_interrupt(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:non_maskable_interrupt\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn debug(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:debug\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn overflow(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:overflow\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn bound_range_exceeded(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:bound_range_exceeded\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn invalid_opcode(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:invalid_opcode\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn device_not_available(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:device_not_available\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn x87_floating_point(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:x87_floating_point\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn machine_check(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:machine_check\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn simd_floating_point(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:simd_floating_point\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn virtualization(stackframe: &mut InterruptStackFrame) {
+    println!("EXCEPTION:virtualization\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn invalid_tss(stackframe: &mut InterruptStackFrame, _err: u64) {
+    println!("EXCEPTION:invalid_tss\n{:#?}\nCode:{:#?}\n", stackframe, _err);
+}
+
+extern "x86-interrupt" fn segment_not_present(stackframe: &mut InterruptStackFrame, _err: u64) {
+    println!("EXCEPTION:segment_not_present\n{:#?}\nCode:{:#?}\n", stackframe, _err);
+}
+
+extern "x86-interrupt" fn stack_segment_fault(stackframe: &mut InterruptStackFrame, _err: u64) {
+    println!("EXCEPTION:stack_segment_fault\n{:#?}\nCode:{:#?}\n", stackframe, _err);
+}
+
+extern "x86-interrupt" fn general_protection_fault(stackframe: &mut InterruptStackFrame, _err: u64) {
+    println!("EXCEPTION:general_protection_fault\n{:#?}\nCode:{:#?}\n", stackframe, _err);
+}
+
+extern "x86-interrupt" fn alignment_check(stackframe: &mut InterruptStackFrame, _err: u64) {
+    println!("EXCEPTION:alignment_check\n{:#?}\nCode:{:#?}\n", stackframe, _err);
+}
+
+extern "x86-interrupt" fn security_exception(stackframe: &mut InterruptStackFrame, _err: u64) {
+    println!("EXCEPTION:security_exception\n{:#?}\nCode:{:#?}\n", stackframe, _err);
 }
 
 // 中断索引表
