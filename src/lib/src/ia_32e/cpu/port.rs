@@ -2,40 +2,66 @@
 pub use crate::ia_32e::instructions::port::{inb, outb, inw, outw, inl, outl};
 use core::marker::PhantomData;
 
-pub trait InOut {
-    unsafe fn port_in(port: u16) -> Self;
-    unsafe fn port_out(port: u16, value: Self);
+pub trait PortRead {
+    unsafe fn read(port: u16) -> Self;
 }
 
-impl InOut for u8 {
-    unsafe fn port_in(port: u16) -> Self {
+pub trait PortWrite {
+    unsafe fn write(port: u16, value: Self);
+}
+
+//pub trait PortReadWrite: PortRead + PortWrite {}
+
+// ---------------------- u8 ---------------------
+
+pub trait PortReadWrite: PortRead + PortWrite {}
+
+impl PortRead for u8 {
+    unsafe fn read(port: u16) -> Self {
         inb(port)
     }
+}
 
-    unsafe fn port_out(port: u16, value: Self) {
-        outb(value, port)
+impl PortWrite for u8 {
+    unsafe fn write(port: u16, value: Self) {
+        outb(value, port);
     }
 }
 
-impl InOut for u16 {
-    unsafe fn port_in(port: u16) -> Self {
+impl PortReadWrite for u8 {}
+
+// ---------------------- u16 ---------------------
+impl PortWrite for u16 {
+    unsafe fn write(port: u16, value: Self) {
+        outw(value, port);
+    }
+}
+
+impl PortRead for u16 {
+    unsafe fn read(port: u16) -> Self {
         inw(port)
     }
-
-    unsafe fn port_out(port: u16, value: Self) {
-        outw(value, port)
-    }
 }
 
-impl InOut for u32 {
-    unsafe fn port_in(port: u16) -> Self {
+impl PortReadWrite for u16 {}
+
+// ---------------------- u32 ---------------------
+
+
+impl PortRead for u32 {
+    unsafe fn read(port: u16) -> Self {
         inl(port)
     }
+}
 
-    unsafe fn port_out(port: u16, value: Self) {
-        outl(value, port)
+impl PortWrite for u32 {
+    unsafe fn write(port: u16, value: Self) {
+        outl(value, port);
     }
 }
+
+impl PortReadWrite for u32 {}
+
 
 #[derive(Debug)]
 pub struct Port<T> {
@@ -43,20 +69,20 @@ pub struct Port<T> {
     phantom: PhantomData<T>,
 }
 
-impl<T: InOut> Port<T> {
+impl<T: PortReadWrite> Port<T> {
     pub const unsafe fn new(port: u16) -> Port<T> {
-        Port { port, phantom: PhantomData{} }
+        Port { port, phantom: PhantomData {} }
     }
 
     pub fn read(&mut self) -> T {
         unsafe {
-            T::port_in(self.port)
+            T::read(self.port)
         }
     }
 
     pub fn write(&mut self, value: T) {
         unsafe {
-            T::port_out(self.port, value)
+            T::write(self.port, value);
         }
     }
 }
@@ -67,16 +93,16 @@ pub struct UnsafePort<T> {
     phantom: PhantomData<T>,
 }
 
-impl<T: InOut> UnsafePort<T> {
+impl<T: PortReadWrite> UnsafePort<T> {
     pub const unsafe fn new(port: u16) -> UnsafePort<T> {
         UnsafePort { port, phantom: PhantomData }
     }
 
     pub unsafe fn write(&mut self, value: T) {
-        T::port_out(self.port, value)
+        T::write(self.port, value);
     }
 
     pub unsafe fn read(&mut self) -> T {
-        T::port_in(self.port)
+        T::read(self.port)
     }
 }
