@@ -10,7 +10,6 @@ pub trait PortWrite {
     unsafe fn write(port: u16, value: Self);
 }
 
-//pub trait PortReadWrite: PortRead + PortWrite {}
 
 // ---------------------- u8 ---------------------
 

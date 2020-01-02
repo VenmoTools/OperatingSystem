@@ -93,3 +93,22 @@ http://www.bioscentral.com
 Source code  is under the Apache License.
 The `src/lib` code is reference [rust-osdev](https://github.com/rust-osdev/x86_64)
 
+# Todo
+
+- [x] println!和print！宏
+- [x] 原子锁
+- [x] 异常处理
+- [x] 双重异常处理
+- [x] 初级中断处理（8259A）
+- [x] 键盘可输入ASCII可打印字符
+- [ ] 初级进程
+- [ ] 添加系统调用
+- [ ] 进程间通信(IPC)
+- [ ] 处理器固件信息处理
+- [ ] 鼠标驱动
+- [ ] 分页内存以及初级内存管理
+- [ ] SLAB内存池以及通用内存管理
+- [ ] UEFI启动
+- [ ] 文件系统
+- [ ] Shell解析器
+- [ ] 系统API库

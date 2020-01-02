@@ -14,8 +14,11 @@ boot:
 run: boot
 	qemu-system-x86_64 -drive format=raw,file=$(IMAGE)
 
+# target remote localhost:1234 GDB
+# LLDB gdb-remote 1234
+# 0x20940c
 debug: boot
-	qemu-system-x86_64 -drive format=raw,file=$(IMAGE) -append "root=/dev/ram console=ttyS0 rdinit=/sbin/init mem=1024M" -S -s
+	qemu-system-x86_64 -s -S -m 512 -hda $(IMAGE)
 
 test:
 	$(GO) $(TEST_FLAGS)

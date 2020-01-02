@@ -15,7 +15,7 @@ use bitflags::bitflags;
 use core::fmt;
 use core::marker::PhantomData;
 use core::ops::{Deref, Index, IndexMut};
-
+use crate::ia_32e::Hex;
 
 #[derive(Clone)]
 #[repr(C)]
@@ -29,17 +29,10 @@ pub struct InterruptStackFrameValue {
 
 impl fmt::Debug for InterruptStackFrameValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        struct Hex(u64);
-        impl fmt::Debug for Hex {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(f, "{:#x}", self.0)
-            }
-        }
-
         let mut s = f.debug_struct("InterruptStackFrame");
         s.field("instruction_pointer", &self.instruction_pointer);
         s.field("code_segment", &self.code_segment);
-        s.field("cpu_flags", &Hex(self.rflags));
+        s.field("cpu_flags", &self.rflags);
         s.field("stack_pointer", &self.stack_pointer);
         s.field("stack_segment", &self.stack_segment);
         s.finish()

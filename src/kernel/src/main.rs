@@ -3,11 +3,14 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(kernel::test_runner)]
 #![reexport_test_harness_main = "test_main"]
+#![cfg_attr(feature = "deny-warnings", deny(missing_docs))]
+
 
 #[macro_use]
 extern crate kernel;
 
 use core::panic::PanicInfo;
+
 use kernel::{init_descriptor, loop_hlt, vga};
 
 #[no_mangle]

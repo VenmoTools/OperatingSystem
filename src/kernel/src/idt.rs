@@ -1,5 +1,4 @@
 use system::ia_32e::cpu::pic::ChainedPics;
-//use pic8259_simple::ChainedPics;
 /// 当一个异常发生后，CPU大概会做一下操作
 /// 1. 将某个寄存器的值压入栈中，其中包含指令寄存器和RFLAGS寄存器
 /// 2. 从IDT中读取响应的条目，例如当发生了段错误后CPU会读取第13号异常
