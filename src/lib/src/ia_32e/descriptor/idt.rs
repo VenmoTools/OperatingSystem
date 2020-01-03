@@ -20,10 +20,15 @@ use crate::ia_32e::Hex;
 #[derive(Clone)]
 #[repr(C)]
 pub struct InterruptStackFrameValue {
+    /// RIP寄存器值
     pub instruction_pointer: VirtAddr,
+    /// CS寄存器值
     pub code_segment: u64,
+    /// 在调用处理器程序前rflags寄存器的值
     pub rflags: u64,
+    /// 中断时的堆栈指针。
     pub stack_pointer: VirtAddr,
+    /// 中断时的堆栈段描述符（在64位模式下通常为零）
     pub stack_segment: u64,
 }
 
@@ -50,6 +55,7 @@ bitflags! {
     }
 }
 
+/// 中断栈帧，对InterruptStackFrameValue的封装
 #[repr(C)]
 pub struct InterruptStackFrame {
     value: InterruptStackFrameValue,
@@ -74,9 +80,12 @@ impl fmt::Debug for InterruptStackFrame {
         self.value.fmt(f)
     }
 }
-
+/// 异常处理函数（无返回码）
 pub type HandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame);
+/// 异常处理函数（含返回码）
 pub type HandlerFuncWithErrCode = extern "x86-interrupt" fn(&mut InterruptStackFrame, code: u64);
+
+/// `#PF`异常处理函数（含返回码）
 pub type PageFaultHandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame, code: PageFaultErrorCode);
 
 
@@ -85,44 +94,64 @@ pub type PageFaultHandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFra
 pub struct EntryOptions(u16);
 
 impl EntryOptions {
+    /// 创建一个最小选项字段并设置所有必须为1的位
     const fn minimal() -> Self {
         EntryOptions(0b1110_0000_0000)
     }
-
+    /// 用于设置第47位(表示`已存在`)
     pub fn set_present(&mut self, present: bool) -> &mut Self {
         self.0.set_bit(15, present);
         self
     }
-
+    /// 用于设置第46-45位(注意不包含15实际范围是13-14),用于设置特权级
     pub fn disable_interrupts(&mut self, disable: bool) -> &mut Self {
         self.0.set_bit(8, !disable);
         self
     }
 
+    /// 用于设置第40位(用于置1表示陷进门,指令表示中断门),所以我们需要使用取反布尔值来完成此操作
     pub fn set_privilege_level(&mut self, dpl: PrivilegedLevel) -> &mut Self {
         self.0.set_bits(13..15, dpl as u16);
         self
     }
-
+    /// 设置第34-32位(IST)
+    /// 如果index的范围不再0-7之间将会panic
     pub unsafe fn set_stack_index(&mut self, index: u16) -> &mut Self {
         self.0.set_bits(0..3, index + 1);
         self
     }
 }
-
+/// 中断门结构
+/// |   127              -              96             |   95     -         64|
+/// +--------------------------------------------------+----------------------+
+/// |                    reserved                      |     Segment Offset   |
+/// +--------------------------------------------------+----------------------+
+///
+/// |  63  -  48   |47|46-45|44|43-40|39-37|36|35|34-32|31  - 16| 15   -   0  |
+/// +--------------+--+-----+--+-----+-----+--+--+-----+--------+-------------+
+/// | SgemntOffset |P | DPL |0 | Type|  0  |0 |0 | IST |Selecotr|SegmentOffset|
+/// +--------------+--+-----+--+-----+-----+--+--+-----+--------+-------------+
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(C)]
 pub struct Entry<F> {
+    /// 段基址（低） 0-16位
     pointer_low: u16,
+    /// GDT选择子 16-31位
     gdt_selector: u16,
+    /// 中断门属性 32-47位
     options: EntryOptions,
+    /// 段基址（中） 48-63位
     pointer_middle: u16,
+    /// 段基址（高） 64-95位
     pointer_high: u32,
+    /// 保留位 96-127位
     reserved: u32,
+    /// 调用函数 PhantomData不占用空间
     handler_func: PhantomData<F>,
 }
 
 impl<F> Entry<F> {
+    /// 中断门初始化
     pub const fn missing() -> Self {
         Entry {
             pointer_low: 0,
@@ -135,6 +164,7 @@ impl<F> Entry<F> {
         }
     }
 
+    /// 用于注册异常处理函数
     #[cfg(target_arch = "x86_64")]
     fn set_handler_addr(&mut self, addr: u64) -> &mut EntryOptions {
         use crate::ia_32e::instructions::segmention::cs;
@@ -256,7 +286,7 @@ impl InterruptDescriptorTable {
             interrupts: [Entry::missing(); 256 - 32],
         }
     }
-
+    /// 重置
     pub fn reset(&mut self) {
         self.divide_by_zero = Entry::missing();
         self.debug = Entry::missing();
@@ -283,7 +313,7 @@ impl InterruptDescriptorTable {
         self.reserved_3 = Entry::missing();
         self.interrupts = [Entry::missing(); 256 - 32];
     }
-
+    /// 使用lidt指令加载IDT
     #[cfg(target_arch = "x86_64")]
     pub fn load(&'static self) {
         use crate::ia_32e::instructions::tables::lidt;

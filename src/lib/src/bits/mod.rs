@@ -1,11 +1,16 @@
 use core::ops::Range;
 
-
+/// 实现 u8 u16 u32 u64 usize i8 i16 i32 i64 isize 等类型的未操作
 pub trait BitOpt {
+    /// 用于返回当前操作数的位长度
     fn length() -> usize;
+    /// 用于返回第size位的值
     fn get_bit(&self, size: usize) -> bool;
+    /// 用于获取[start,end)范围的比特位
     fn get_bits(&self, range: Range<usize>) -> Self;
+    /// 获取设置第bit位的值
     fn set_bit(&mut self, bit: usize, value: bool) -> &mut Self;
+    /// 用于设置[start,end)范围的比特位
     fn set_bits(&mut self, range: Range<usize>, value: Self) -> &mut Self;
 }
 
@@ -45,12 +50,17 @@ macro_rules! bit_opt_impl {
             }
 
             fn set_bits(&mut self, range: Range<usize>, value: Self) -> &mut Self {
-                assert!(range.start < Self::length());
-                assert!(range.end <= Self::length());
-                assert!(range.end > range.start);
+                let length = Self::length();
+                assert!(range.start < length);
+                assert!(range.end <= length);
+                assert!(range.start < range.end);
+                assert!(value << (length - (range.end - range.start)) >>
+                        (length - (range.end - range.start)) == value,
+                        "value does not fit into bit range");
 
-                let shift_bits = Self::length() - range.end;
-                let mask = !0 << shift_bits >> shift_bits >> range.start << range.start;
+                let mask: Self = !(!0 << (length - range.end) >>
+                                    (length - range.end) >>
+                                    range.start << range.start);
 
                 *self = (*self & mask) | (value << range.start);
 

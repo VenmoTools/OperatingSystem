@@ -155,12 +155,10 @@ impl Descriptor {
     /// +---------+--+--+--+---+-----+--+-----+--+--+--+--+--+--------+--------+-----+
     ///
     pub fn tss_segment(ts: &'static TaskStateSegment) -> Descriptor {
-        use self::DescriptorFlags as Flags;
         use core::mem::size_of;
 
         let ptr = ts as *const _ as u64;
-
-        let mut low = Flags::PRESENT.bits();
+        let mut low = DescriptorFlags::PRESENT.bits();
 
         // 段基址(低)
         low.set_bits(16..40, ptr.get_bits(0..24));
@@ -177,6 +175,7 @@ impl Descriptor {
     }
 }
 
+/// 用于将GDT，IDT等描述符保存为指针形式
 #[derive(Debug, Copy, Clone)]
 #[repr(C, packed)]
 pub struct DescriptorTablePointer {

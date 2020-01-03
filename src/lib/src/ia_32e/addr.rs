@@ -62,6 +62,7 @@ use core::convert::{Into, TryInto};
 #[repr(transparent)]
 pub struct VirtAddr(u64);
 
+/// 无效Canonical地址
 #[derive(Debug)]
 pub struct NoCanonicalAddr(u64);
 

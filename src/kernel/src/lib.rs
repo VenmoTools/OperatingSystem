@@ -21,7 +21,7 @@ pub fn init_descriptor() {
         // 初始化PIC 8259
         idt::PICS.lock().initialize();
     }
-    x86_64::instructions::interrupts::enable();
+    system::ia_32e::instructions::interrupt::enable();
 }
 
 /// 用于测试过程中异常处理
@@ -77,9 +77,8 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
         port.write(exit_code as u32);
     }
 }
-
 pub fn loop_hlt() -> ! {
     loop {
-        x86_64::instructions::hlt();
+        system::ia_32e::instructions::interrupt::hlt();
     }
 }

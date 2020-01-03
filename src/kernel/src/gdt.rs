@@ -4,9 +4,6 @@ use system::ia_32e::descriptor::tss::TaskStateSegment;
 
 use lazy_static::lazy_static;
 
-#[macro_use]
-use crate::vga::_print;
-
 pub const DOUBLE_FAULT_LIST_INDEX: u16 = 0;
 
 
@@ -19,18 +16,19 @@ lazy_static! {
     // 此双重故障堆栈没有保护页面以防止堆栈溢出，因此不能在双重故障处理程序中执行任何占用大量堆栈的操作
     static ref TSS: TaskStateSegment = {
         let mut tss = TaskStateSegment::new();
-        tss.interrupt_stack_table[DOUBLE_FAULT_LIST_INDEX as usize] = {
+        let stack_len =
+        {
             // 这里STACK_SIZE需要显示写出是usize的，因为我们的VirtAddr只完成了对usize的加法操作
             const STACK_SIZE:usize = 4096;
             // 指定使用的栈大小位4096
             static mut STACK:[u8;STACK_SIZE] = [0;STACK_SIZE];
             // 把STACK的转为裸指针（这样可能造成未定义行为）
-            let stack_start = VirtAddr::from_pointer(unsafe{&STACK as *const u8});
+            let stack_start = VirtAddr::from_pointer(unsafe{&STACK});
             // 栈的生长方向是高地址向低地址我们添加栈的高地址
             let stack_end = stack_start + STACK_SIZE;
             stack_end
         };
-
+        tss.interrupt_stack_table[DOUBLE_FAULT_LIST_INDEX as usize] = stack_len;
         tss
     };
 }
@@ -39,7 +37,7 @@ lazy_static! {
     static ref GDT:(GlobalDescriptorTable,Selectors) = {
         let mut gdt = GlobalDescriptorTable::new();
         let code_selector = gdt.add_descriptor(Descriptor::kernel_code_segment());
-        let tss_selector = gdt.add_descriptor(Descriptor::tss_segment(&*TSS));
+        let tss_selector = gdt.add_descriptor(Descriptor::tss_segment(&TSS));
         (gdt,Selectors{code_selector,tss_selector})
     };
 }
@@ -49,10 +47,6 @@ pub fn init() {
     use system::ia_32e::instructions::tables::load_tss;
 
     GDT.0.load();
-    _print(format_args!("{:?}\n", Descriptor::tss_segment(&*TSS)));
-
-    _print(format_args!("{:?}\n", GDT.0));
-
 
     unsafe {
         set_cs(GDT.1.code_selector);

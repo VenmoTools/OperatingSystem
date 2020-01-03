@@ -2,18 +2,20 @@
 pub use crate::ia_32e::instructions::port::{inb, outb, inw, outw, inl, outl};
 use core::marker::PhantomData;
 
+/// 端口读取操作
 pub trait PortRead {
     unsafe fn read(port: u16) -> Self;
 }
 
+/// 写入端口操作
 pub trait PortWrite {
     unsafe fn write(port: u16, value: Self);
 }
 
+/// 实现了PortRead和PortWrite也实现了该trait
+pub trait PortReadWrite: PortRead + PortWrite {}
 
 // ---------------------- u8 ---------------------
-
-pub trait PortReadWrite: PortRead + PortWrite {}
 
 impl PortRead for u8 {
     unsafe fn read(port: u16) -> Self {
@@ -62,6 +64,7 @@ impl PortWrite for u32 {
 impl PortReadWrite for u32 {}
 
 
+/// 对端口操作的抽象，实现了read和write操作提供的是Safe方法
 #[derive(Debug)]
 pub struct Port<T> {
     port: u16,
@@ -85,7 +88,7 @@ impl<T: PortReadWrite> Port<T> {
         }
     }
 }
-
+/// 对端口操作的抽象，实现了read和write操作提供的是UnSafe方法
 #[derive(Debug)]
 pub struct UnsafePort<T> {
     port: u16,

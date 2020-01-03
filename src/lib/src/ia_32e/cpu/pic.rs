@@ -7,6 +7,7 @@ const ICW1: u8 = 0x11;
 const ICW3_M: u8 = 0x04;
 const ICW3_S: u8 = 0x02;
 
+/// 单PIC 8259A的结构
 #[derive(Debug)]
 struct Pic {
     offset: u8,
@@ -27,6 +28,7 @@ impl Pic {
     }
 }
 
+/// PIC两级级联结构
 #[derive(Debug)]
 pub struct ChainedPics {
     main: Pic,
@@ -34,6 +36,7 @@ pub struct ChainedPics {
 }
 
 impl ChainedPics {
+    /// 根据指定的偏移创建ChainedPics
     pub const unsafe fn new(offset_1: u8, offset_2: u8) -> ChainedPics {
         ChainedPics {
             main: Pic {
@@ -106,6 +109,7 @@ impl ChainedPics {
         self.slave.data.write(saved_mask2);
     }
 
+    /// 判断当前的中断号是否可以被主片或从片处理
     pub fn handles_interrupt(&self, interrupt_id: u8) -> bool {
         self.main.handle_interrupt(interrupt_id) || self.slave.handle_interrupt(interrupt_id)
     }

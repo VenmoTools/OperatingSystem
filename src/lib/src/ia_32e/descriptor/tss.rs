@@ -2,8 +2,12 @@ use crate::ia_32e::addr::VirtAddr;
 use core::fmt;
 use crate::ia_32e::Hex;
 
-
-#[derive(Clone, Copy)]
+/// RSPn： Canonical型栈指针(特权级0-2)
+/// ISTn: Canonical型中断栈表(共8组)
+/// I/O位图基地址： I/O许可位图
+/// 在发生特权级转换时，把新的SS段寄存器设置为NULL段选择子是为了完成远跳转(far call或INT n或中断或异常)，
+/// 旧SS段寄存器和RSP将被保存在新栈中
+#[derive(Debug,Clone, Copy)]
 #[repr(C, packed)]
 pub struct TaskStateSegment {
     reserved_1: u32,
@@ -16,16 +20,6 @@ pub struct TaskStateSegment {
     reserved_4: u16,
     /// 16位IO位图
     pub io_map_base: u16,
-}
-
-impl fmt::Debug for TaskStateSegment{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut de = f.debug_struct("TaskStateSegment");
-        de.field("privilege_stack_table",&self.privilege_stack_table);
-        de.field("interrupt_stack_table",&self.interrupt_stack_table);
-        de.field("io_map_base",&self.io_map_base);
-        de.finish()
-    }
 }
 
 impl TaskStateSegment {

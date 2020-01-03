@@ -29,6 +29,7 @@ impl PrivilegedLevel {
     }
 }
 
+/// 用于将u64以十六进制显示
 #[repr(transparent)]
 struct Hex(u64);
 
@@ -44,6 +45,7 @@ impl fmt::Debug for Hex {
     }
 }
 
+/// 用于将u64以二进制显示
 #[repr(transparent)]
 struct Binary(u64);
 
