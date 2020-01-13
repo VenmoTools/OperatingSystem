@@ -1,5 +1,4 @@
-use crate::ia_32e::cpu::port::{UnsafePort, Port};
-
+use super::{UnsafePort, Port};
 
 const EOI: u8 = 0x20;
 const ICW4: u8 = 0x01;

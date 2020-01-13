@@ -1,8 +1,13 @@
-pub mod addr;
+///! ia-32模式下的描述符操作，分页操作，PIC以及常用的指令
+mod addr;
 pub mod descriptor;
 pub mod instructions;
+pub mod paging;
 pub mod cpu;
+pub use addr::{VirtAddr, PhysAddr, NoInvalidPhysAddr, NoCanonicalAddr};
+
 use core::fmt;
+
 /// 系统特权级
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -18,6 +23,7 @@ pub enum PrivilegedLevel {
 }
 
 impl PrivilegedLevel {
+    /// 根据给定额值判断当前特权级，如果不在范围则Panic
     pub fn from_u16(level: u16) -> PrivilegedLevel {
         match level {
             0 => PrivilegedLevel::Ring0,

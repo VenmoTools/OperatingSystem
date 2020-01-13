@@ -1,6 +1,4 @@
-use crate::ia_32e::addr::VirtAddr;
-use core::fmt;
-use crate::ia_32e::Hex;
+use crate::ia_32e::VirtAddr;
 
 /// RSPn： Canonical型栈指针(特权级0-2)
 /// ISTn: Canonical型中断栈表(共8组)

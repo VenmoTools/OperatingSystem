@@ -1,6 +1,5 @@
-use system::ia_32e::addr::VirtAddr;
-use system::ia_32e::descriptor::{Descriptor, gdt::GlobalDescriptorTable, SegmentSelector};
-use system::ia_32e::descriptor::tss::TaskStateSegment;
+use system::ia_32e::descriptor::{Descriptor, GlobalDescriptorTable, SegmentSelector, TaskStateSegment};
+use system::ia_32e::VirtAddr;
 
 use lazy_static::lazy_static;
 
@@ -42,7 +41,7 @@ lazy_static! {
     };
 }
 
-pub fn init() {
+pub fn init_gdt() {
     use system::ia_32e::instructions::segmention::set_cs;
     use system::ia_32e::instructions::tables::load_tss;
 

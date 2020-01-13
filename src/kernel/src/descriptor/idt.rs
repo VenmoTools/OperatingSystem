@@ -1,4 +1,5 @@
-use system::ia_32e::cpu::pic::ChainedPics;
+use system::bits::PageFaultErrorCode;
+use system::ia_32e::cpu::ChainedPics;
 /// 当一个异常发生后，CPU大概会做一下操作
 /// 1. 将某个寄存器的值压入栈中，其中包含指令寄存器和RFLAGS寄存器
 /// 2. 从IDT中读取响应的条目，例如当发生了段错误后CPU会读取第13号异常
@@ -20,21 +21,30 @@ use system::ia_32e::cpu::pic::ChainedPics;
 /// 在x86_64位系统中
 ///     Preserved寄存器（被调用者保存）：rbp, rbx, rsp, r12, r13, r14, r15
 ///     Scratch 寄存器 （调用者保存） ：rax, rcx, rdx, rsi, rdi, r8, r9, r10, r11
-use system::ia_32e::descriptor::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
-use system::mutex::Mutex;
+use system::ia_32e::descriptor::{InterruptDescriptorTable, InterruptStackFrame};
+use system::Mutex;
 
 use lazy_static::lazy_static;
 
 use crate::{loop_hlt, print, println};
-use crate::gdt;
+use crate::descriptor::gdt;
 
-pub const PIC_A_OFFSET: u8 = 32;
-pub const PIC_B_OFFSET: u8 = PIC_A_OFFSET + 8;
+pub const PIC_MAIN: u8 = 32;
+pub const PIC_SLAVE: u8 = PIC_MAIN + 8;
 
 // 使用Mutex可以安全操作内部可变的数据
-pub static PICS: Mutex<ChainedPics> = Mutex::new(unsafe { ChainedPics::new(PIC_A_OFFSET, PIC_B_OFFSET) });
+pub static PICS: Mutex<ChainedPics> = Mutex::new(unsafe { ChainedPics::new(PIC_MAIN, PIC_SLAVE) });
 
 
+pub fn init_idt() {
+    IDT.load();
+}
+
+pub fn init_pics() {
+    unsafe {
+        PICS.lock().initialize();
+    }
+}
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
@@ -68,9 +78,7 @@ lazy_static! {
     };
 }
 
-pub fn init() {
-    IDT.load();
-}
+
 
 // 调试中断
 extern "x86-interrupt" fn breakpoint(stackframe: &mut InterruptStackFrame) {
@@ -222,7 +230,7 @@ extern "x86-interrupt" fn security_exception(stackframe: &mut InterruptStackFram
 #[repr(u8)]
 enum InterruptIndex {
     // 时钟中断
-    Timer = PIC_A_OFFSET,
+    Timer = PIC_MAIN,
     // 键盘中断
     KeyBoard,
 }

@@ -3,9 +3,11 @@
 // 15       位为  闪烁文字
 
 use core::fmt;
-use lazy_static::lazy_static;
-use system::mutex::Mutex;
+
+use system::Mutex;
 use volatile::Volatile;
+
+use lazy_static::lazy_static;
 
 pub const BUFFER_HEIGHT: usize = 25;
 pub const BUFFER_WIDTH: usize = 80;
@@ -37,16 +39,26 @@ pub fn _print(arg: fmt::Arguments) {
     });
 }
 
+#[doc(hidden)]
+pub fn _log(line: &str) {
+    use core::{line, file};
+    _print(format_args!("{} ,in file:{},at line:{} ", line, file!(), line!()));
+}
+
+#[macro_export]
+macro_rules! log {
+    ($arg:tt) => (crate::devices::vga::_log($arg));
+}
+
 #[macro_export]
 macro_rules! print {
-    ($($arg:tt)*) => (crate::vga::_print(format_args!($($arg)*)));
+    ($($arg:tt)*) => (crate::devices::vga::_print(format_args!($($arg)*)));
 }
 
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n",format_args!($($arg)*)));
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,7 +138,7 @@ pub struct Writer {
 
 
 impl Writer {
-    pub fn write_bytes(&mut self, byte: u8) {
+    pub fn write_color_bytes(&mut self, byte: u8, color: ColorCode) {
         match byte {
             b'\n' => self.new_line(),
             byte => {
@@ -138,7 +150,6 @@ impl Writer {
 
                 let row = self.row_position;
                 let col = self.column_position;
-                let color = self.color_code;
                 // 使用write方法来代替= 保证编译器将永远不会优化写操作。
                 self.buffer.chars[row][col].write(ScreenChar {
                     ascii_char: byte,
@@ -150,15 +161,24 @@ impl Writer {
         }
     }
 
-    pub fn write_string(&mut self, s: &str) {
+
+    pub fn write_bytes(&mut self, byte: u8) {
+        self.write_color_bytes(byte, self.color_code);
+    }
+
+    pub fn write_color_string(&mut self, s: &str, color: ColorCode) {
         for byte in s.bytes() {
             match byte {
                 //32(空格) - 126(~)
-                0x20..=0x7e | b'\n' => self.write_bytes(byte),
+                0x20..=0x7e | b'\n' => self.write_color_bytes(byte, color),
                 // 不是ASCII可打印字符 会打印■
                 _ => self.write_bytes(0xfe),
             }
         }
+    }
+
+    pub fn write_string(&mut self, s: &str) {
+        self.write_color_string(s, self.color_code);
     }
 
     fn new_line(&mut self) {
