@@ -8,15 +8,15 @@
 // except according to those terms.
 
 use crate::ia_32e::PrivilegedLevel;
-use crate::ia_32e::addr::VirtAddr;
-use crate::bits::BitOpt;
-use bitflags::bitflags;
+use crate::ia_32e::VirtAddr;
+use crate::bits::{BitOpt, PageFaultErrorCode};
+
 
 use core::fmt;
 use core::marker::PhantomData;
 use core::ops::{Deref, Index, IndexMut};
-use crate::ia_32e::Hex;
 
+/// 中断栈帧的值
 #[derive(Clone)]
 #[repr(C)]
 pub struct InterruptStackFrameValue {
@@ -44,16 +44,6 @@ impl fmt::Debug for InterruptStackFrameValue {
     }
 }
 
-bitflags! {
-    #[repr(transparent)]
-    pub struct PageFaultErrorCode: u64 {
-        const PROTECTION_VIOLATION = 1 << 0;
-        const CAUSED_BY_WRITE = 1 << 1;
-        const USER_MODE = 1 << 2;
-        const MALFORMED_TABLE = 1 << 3;
-        const INSTRUCTION_FETCH = 1 << 4;
-    }
-}
 
 /// 中断栈帧，对InterruptStackFrameValue的封装
 #[repr(C)]
@@ -80,6 +70,7 @@ impl fmt::Debug for InterruptStackFrame {
         self.value.fmt(f)
     }
 }
+
 /// 异常处理函数（无返回码）
 pub type HandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame);
 /// 异常处理函数（含返回码）
@@ -88,7 +79,7 @@ pub type HandlerFuncWithErrCode = extern "x86-interrupt" fn(&mut InterruptStackF
 /// `#PF`异常处理函数（含返回码）
 pub type PageFaultHandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame, code: PageFaultErrorCode);
 
-
+/// IDT段属性
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EntryOptions(u16);
@@ -121,6 +112,7 @@ impl EntryOptions {
         self
     }
 }
+
 /// 中断门结构
 /// |   127              -              96             |   95     -         64|
 /// +--------------------------------------------------+----------------------+
@@ -181,6 +173,7 @@ impl<F> Entry<F> {
 
 #[cfg(target_arch = "x86_64")]
 impl Entry<HandlerFunc> {
+    /// 用于注册异常处理函数，无错误码
     pub fn set_handler_fn(&mut self, handler: HandlerFunc) -> &mut EntryOptions {
         self.set_handler_addr(handler as u64)
     }
@@ -188,6 +181,7 @@ impl Entry<HandlerFunc> {
 
 #[cfg(target_arch = "x86_64")]
 impl Entry<HandlerFuncWithErrCode> {
+    /// 用于注册异常处理函数，含错误码
     pub fn set_handler_fn(&mut self, handler: HandlerFuncWithErrCode) -> &mut EntryOptions {
         self.set_handler_addr(handler as u64)
     }
@@ -195,12 +189,13 @@ impl Entry<HandlerFuncWithErrCode> {
 
 #[cfg(target_arch = "x86_64")]
 impl Entry<PageFaultHandlerFunc> {
+    /// 用于注册异常处理函数，含页异常错误码
     pub fn set_handler_fn(&mut self, handler: PageFaultHandlerFunc) -> &mut EntryOptions {
         self.set_handler_addr(handler as u64)
     }
 }
 
-
+/// 中断描述符表
 #[allow(missing_debug_implementations)]
 #[derive(Clone)]
 #[repr(C)]
@@ -257,6 +252,7 @@ pub struct InterruptDescriptorTable {
 }
 
 impl InterruptDescriptorTable {
+    /// 创建初始化的中断描述符表
     pub const fn new() -> InterruptDescriptorTable {
         InterruptDescriptorTable {
             divide_by_zero: Entry::missing(),

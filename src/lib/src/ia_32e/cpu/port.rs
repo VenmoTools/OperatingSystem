@@ -75,13 +75,13 @@ impl<T: PortReadWrite> Port<T> {
     pub const unsafe fn new(port: u16) -> Port<T> {
         Port { port, phantom: PhantomData {} }
     }
-
+    /// 端口读取操作 安全方法
     pub fn read(&mut self) -> T {
         unsafe {
             T::read(self.port)
         }
     }
-
+    /// 端口写入操作 安全方法
     pub fn write(&mut self, value: T) {
         unsafe {
             T::write(self.port, value);
@@ -100,10 +100,11 @@ impl<T: PortReadWrite> UnsafePort<T> {
         UnsafePort { port, phantom: PhantomData }
     }
 
+    /// 端口写入操作 不安全方法
     pub unsafe fn write(&mut self, value: T) {
         T::write(self.port, value);
     }
-
+    /// 端口读取操作 不安全方法
     pub unsafe fn read(&mut self) -> T {
         T::read(self.port)
     }

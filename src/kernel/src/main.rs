@@ -11,12 +11,18 @@ extern crate kernel;
 
 use core::panic::PanicInfo;
 
-use kernel::{init_descriptor, loop_hlt, vga};
+use kernel::{devices, Initializer, loop_hlt};
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     println!("Hello World");
-    init_descriptor();
+    let cpuid = raw_cpuid::CpuId::new();
+    println!("cpu info:{:?}", cpuid.get_vendor_info().unwrap().as_string());
+
+    Initializer::initialize_all();
+    use x86_64::registers::control::Cr3;
+    let (addr, _) = Cr3::read();
+    println!("{:?}", addr);
     loop_hlt()
 }
 

@@ -22,3 +22,4 @@ debug: boot
 
 test:
 	$(GO) $(TEST_FLAGS)
+

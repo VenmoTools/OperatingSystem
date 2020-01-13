@@ -90,7 +90,8 @@ impl VirtAddr {
             other => Err(NoCanonicalAddr(other)),
         }
     }
-
+    /// 使用给定的原始地址虚拟地址结构
+    /// 如果给定的虚拟地址不符合Canonical地址将会Panic
     pub fn new(addr: u64) -> VirtAddr {
         // 给定的地址48-64位必须是不包含任何数据的
         Self::try_new(addr).expect("given address can not contain any data in bits 48 to 64")
@@ -101,7 +102,7 @@ impl VirtAddr {
     pub const fn zero() -> VirtAddr {
         VirtAddr(0)
     }
-
+    /// 将虚拟地址结构转为u64类型
     pub fn as_u64(&self) -> u64 {
         self.0
     }
@@ -110,11 +111,12 @@ impl VirtAddr {
         Self::new(cast::u64(pointer as usize))
     }
 
+    /// 将虚拟地址转为64位宽的原始指针
     #[cfg(target_pointer_width = "64")]
     pub fn as_ptr<T>(self) -> *const T {
         cast::usize(self.as_u64()) as *const T
     }
-
+    /// 将虚拟地址转为64位宽的可变原始指针
     #[cfg(target_pointer_width = "64")]
     pub fn as_mut_ptr<T>(self) -> *mut T {
         self.as_ptr::<T>() as *mut T
@@ -168,15 +170,15 @@ impl VirtAddr {
     pub fn page4_index(&self) -> u9 {
         u9::new(((self.0 >> 12 >> 9 >> 9 >> 9) & 0o777).try_into().unwrap())
     }
-
+    /// 将虚拟地址向上对齐
     pub fn align_up<U>(self, align: U) -> Self where U: Into<u64> {
         VirtAddr(align_down(self.0, align.into()))
     }
-
+    /// 将虚拟地址向下对齐
     pub fn align_down<U>(self, align: U) -> Self where U: Into<u64> {
         VirtAddr(align_up(self.0, align.into()))
     }
-
+    /// 判断虚拟地址是否被对齐
     pub fn is_aligned<U>(self, align: U) -> bool where U: Into<u64> {
         self.align_down(align) == self
     }
@@ -259,12 +261,12 @@ impl Sub<VirtAddr> for VirtAddr {
 }
 
 
-pub fn align_down(addr: u64, align: u64) -> u64 {
+fn align_down(addr: u64, align: u64) -> u64 {
     assert!(align & (align - 1) == 0, "`align` must be a power of two");
     addr & !(align - 1)
 }
 
-pub fn align_up(addr: u64, align: u64) -> u64 {
+fn align_up(addr: u64, align: u64) -> u64 {
     assert!(align & (align - 1) == 0, "`align` must be a power of two");
 
     let mask = align - 1;
@@ -274,49 +276,51 @@ pub fn align_up(addr: u64, align: u64) -> u64 {
         (addr | mask) + 1
     }
 }
+
+/// 64物理地址结构
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct PhysAddr(u64);
-
+/// 无效的64位物理地址
 #[derive(Debug)]
 pub struct NoInvalidPhysAddr(u64);
 
 impl PhysAddr {
+    /// 根据给定原始地址创建物理地址，如果 52 置64位没有被置位则会Panic
     pub fn new(addr: u64) -> PhysAddr {
         assert_eq!(addr.get_bits(52..64), 0, "physical addresses must not have any bits in the range 52 to 64 set");
         PhysAddr(addr)
     }
-
+    ///  根据给定原始地址创建物理地址，如果 52 置64位没有被置位则会返回Err(NoInvalidPhysAddr)
     pub fn try_new(addr: u64) -> Result<PhysAddr, NoInvalidPhysAddr> {
         match addr.get_bits(52..64) {
             0 => Ok(PhysAddr(addr)),
             other => Err(NoInvalidPhysAddr(other)),
         }
     }
-
+    /// 将物理地址结构转为u64类型
     pub fn as_u64(self) -> u64 {
         self.0
     }
-
+    /// 用于判断物理地址是否是零地址
     pub fn is_null(&self) -> bool {
         self.0 == 0
     }
-
+    /// 页表向上对齐
     pub fn align_up<U>(self, align: U) -> Self where U: Into<u64>,
     {
         PhysAddr(align_up(self.0, align.into()))
     }
-
+    /// 页表向下对齐
     pub fn align_down<U>(self, align: U) -> Self where U: Into<u64>,
     {
         PhysAddr(align_down(self.0, align.into()))
     }
-
+    /// 判断当前地址是否已经被对齐
     pub fn is_aligned<U>(self, align: U) -> bool where U: Into<u64>,
     {
         self.align_down(align) == self
     }
-
 }
 
 impl fmt::Debug for PhysAddr {

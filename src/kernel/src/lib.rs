@@ -5,23 +5,37 @@
 #![reexport_test_harness_main = "test_main"]
 #![feature(abi_x86_interrupt)]
 
+#[cfg(target_arch = "x86_64")]
+pub(crate) use core::arch::x86_64 as arch;
 use core::panic::PanicInfo;
 
 pub mod serial;
-pub mod vga;
-pub mod idt;
-pub mod gdt;
 
 
-pub fn init_descriptor() {
-    idt::init();
-    gdt::init();
+pub mod descriptor;
+pub mod process;
+pub mod devices;
 
-    unsafe {
-        // 初始化PIC 8259
-        idt::PICS.lock().initialize();
+
+pub struct Initializer;
+
+impl Initializer {
+    #[cfg(feature = "x86")]
+    pub fn initialize_all() {
+        // 初始化gdt
+        descriptor::init_gdt();
+        // 初始化idt
+        descriptor::init_idt();
+        // 初始化pics
+        descriptor::init_pics();
+
+        // 初始化内存管理
+
+        // 开启分页
+
+        // 开启中断
+        system::ia_32e::instructions::interrupt::enable();
     }
-    system::ia_32e::instructions::interrupt::enable();
 }
 
 /// 用于测试过程中异常处理
@@ -77,6 +91,7 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
         port.write(exit_code as u32);
     }
 }
+
 pub fn loop_hlt() -> ! {
     loop {
         system::ia_32e::instructions::interrupt::hlt();

@@ -1,6 +1,20 @@
 use crate::bits::BitOpt;
-use crate::ia_32e::cpu::pic::ChainedPics;
-use crate::ia_32e::cpu::port::InOut;
+use crate::ia_32e::cpu::ChainedPics;
+use crate::ia_32e::cpu::PortReadWrite;
+use crate::ia_32e::{
+    PrivilegedLevel,
+    PhysAddr,
+    VirtAddr,
+    NoInvalidPhysAddr,
+    NoCanonicalAddr,
+    descriptor::{
+        SegmentSelector,
+        TaskStateSegment,
+        GlobalDescriptorTable,
+        InterruptStackFrame, InterruptDescriptorTable,
+    },
+};
+
 
 #[test]
 fn length_test() {

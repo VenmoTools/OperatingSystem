@@ -1,3 +1,4 @@
+///! 封装关于cs tss等段操作指令
 use crate::ia_32e::descriptor::SegmentSelector;
 
 /// 加载cs段选择子
@@ -68,7 +69,7 @@ pub unsafe fn load_gs(selector:SegmentSelector){
         :"memory"
     );
 }
-
+/// swapgs指令
 pub unsafe fn swap_gs(){
     asm!(
         "swapgs"

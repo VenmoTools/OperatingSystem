@@ -1,3 +1,4 @@
+///! 用于加载GDT IDT TSS的相关指令
 use crate::ia_32e::descriptor::SegmentSelector;
 use crate::ia_32e::descriptor::DescriptorTablePointer;
 

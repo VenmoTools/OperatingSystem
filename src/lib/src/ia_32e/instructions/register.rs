@@ -1,3 +1,4 @@
+///! 用于封装基本的寄存器操作指令
 /// 向CR0寄存器写入64位数据
 #[inline]
 pub unsafe fn write_cr0(value: u64) {
