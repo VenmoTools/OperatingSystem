@@ -84,6 +84,17 @@ pub type PageFaultHandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFra
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EntryOptions(u16);
 
+/// IDT 属性
+/// 原版
+/// |  63  -  48   |47|46-45|44|43-40|39-37|36|35|34-32|31  - 16| 15   -   0  |
+/// +--------------+--+-----+--+-----+-----+--+--+-----+--------+-------------+
+/// | SgemntOffset |P | DPL |0 | Type|  0  |0 |0 | IST |Selecotr|SegmentOffset|
+/// +--------------+--+-----+--+-----+-----+--+--+-----+--------+-------------+
+/// 简短版：
+/// |15|14-13|12|11|10|9|8|7 - 5|4|3|2 - 0|
+/// +--+-----+--+--+--+-+-+-----+-+-+-----+
+/// |P | DPL |0 |1 |1 |1|1|  0  |0|0| IST |
+/// +--+-----+--+--+--+-+-+-----+-+-+-----+
 impl EntryOptions {
     /// 创建一个最小选项字段并设置所有必须为1的位
     const fn minimal() -> Self {
@@ -94,18 +105,18 @@ impl EntryOptions {
         self.0.set_bit(15, present);
         self
     }
-    /// 用于设置第46-45位(注意不包含15实际范围是13-14),用于设置特权级
+    /// 用于设置第40位(用于置1表示陷进门,指令表示中断门),所以我们需要使用取反布尔值来完成此操作
     pub fn disable_interrupts(&mut self, disable: bool) -> &mut Self {
         self.0.set_bit(8, !disable);
         self
     }
 
-    /// 用于设置第40位(用于置1表示陷进门,指令表示中断门),所以我们需要使用取反布尔值来完成此操作
+    /// 用于设置第46-45位(注意不包含15实际范围是13-14),用于设置特权级
     pub fn set_privilege_level(&mut self, dpl: PrivilegedLevel) -> &mut Self {
         self.0.set_bits(13..15, dpl as u16);
         self
     }
-    /// 设置第34-32位(IST)
+    /// 设置第34-32位(IST) 用于异常处理的堆栈索引
     /// 如果index的范围不再0-7之间将会panic
     pub unsafe fn set_stack_index(&mut self, index: u16) -> &mut Self {
         self.0.set_bits(0..3, index + 1);
