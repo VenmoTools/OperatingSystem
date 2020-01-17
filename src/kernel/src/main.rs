@@ -18,7 +18,6 @@ pub extern "C" fn _start() -> ! {
     println!("Hello World");
     let cpuid = raw_cpuid::CpuId::new();
     println!("cpu info:{:?}", cpuid.get_vendor_info().unwrap().as_string());
-
     Initializer::initialize_all();
     use x86_64::registers::control::Cr3;
     let (addr, _) = Cr3::read();

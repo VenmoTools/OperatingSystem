@@ -35,14 +35,13 @@ bootloader = "0.8.0"
 volatile = "0.2.6"
 # 互斥锁
 spin = "0.5.2"
-# 中断处理
 x86_64 = "0.8.3"
 # 初始化UART，并通过串行端口发送数据
 uart_16550 = "0.2.0"
 # 提供一个已检查的强制转换功能
 #cast = "0.2.3"
 # 可编程中断控制器 8259(Programmable Interrupt Controller)
-pic8259_simple = "0.1.1"
+#pic8259_simple = "0.1.1"
 # 键盘键位映射
 pc-keyboard = "0.3.1"
 # cpuid
