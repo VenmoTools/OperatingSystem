@@ -1,0 +1,36 @@
+[package]
+name = "kernel"
+version = "0.2.0"
+authors = ["venmosnake <VenmoSnake@yeah.net>"]
+edition = "2018"
+
+#[target.x86_64-unknown-none]
+#rustflags = [
+#    "-C", "link-arg=-T ./linker.ld",
+#]
+
+# 惰性初始化的宏
+[dependencies.lazy_static]
+version = "1.0"
+features = ["spin_no_std"]
+
+[dependencies.uefi]
+version="0.4.0"
+features = ['exts']
+
+[dependencies]
+# 避免编译器错误的优化
+volatile = "0.2.6"
+# 互斥锁
+spin = "0.5.2"
+x86_64 = "0.8.3"
+# 初始化UART，并通过串行端口发送数据
+uart_16550 = "0.2.0"
+# 键盘键位映射
+pc-keyboard = "0.3.1"
+# cpuid
+raw-cpuid="2.0.2"
+
+[dependencies.system]
+path="system/"
+version="0.3.0"
