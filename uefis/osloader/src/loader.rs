@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 use core::alloc::{Alloc, AllocErr, GlobalAlloc, Layout, LayoutErr};
 use core::intrinsics::copy;
+use core::ops::Add;
 use core::ptr::NonNull;
 use uefi::ResultExt;
 use uefi::table::boot::{AllocateType, BootServices};
@@ -57,7 +58,7 @@ unsafe impl MemOpt for Allocator<'_> {
 
 impl OsLoaderAlloc for Allocator<'_> {
     fn alloc_os_mem(&mut self, layout: Layout, ty: AllocateType) -> Result<NonNull<u8>, AllocErr> {
-        let ptr = self.bt.allocate_pages(ty, MemoryType::LOADER_DATA, layout.size()).log_warning();
+        let ptr = self.bt.allocate_pool(MemoryType::LOADER_DATA, layout.size()).log_warning();
         match ptr {
             Ok(ptr) => Ok(NonNull::new(ptr as *mut _).unwrap()),
             Err(e) => {
@@ -106,48 +107,40 @@ impl<'a, G: OsLoaderAlloc> ElfLoader<'a, G> {
     /// 6．修改节区A的节区头部，增加节区A的大小。增加值为嵌入代码的长度。
     /// 7．修改位于节区A之后所有节区的节区头部的偏移量，增加值为嵌入代码的长度 。
     /// 8．修改ELF头部的入口地址，指向添加的代码
-    pub fn load_memory(&mut self) {
+    pub fn load_memory(&mut self) -> usize {
         let header_layout = self.header_layout().unwrap();
 //        let mut ptr = self.allocator.alloc_ty(header_layout,AllocateType::Address(),MemoryType::RUNTIME_SERVICES_CODE).unwrap();
 
         match self.elf {
             Elf::Elf64(ref elf) => {
+                // 读取并加载ProgramHeader信息
                 let buffer_ptr = elf.as_bytes().as_ptr();
+                // 获取段所需的最大内存数
+                let data = elf.program_header_iter()
+                    .filter(|h| h.ph.ph_type() == ProgramType::LOAD)
+                    .map(|x| x.ph.p_memsz + x.ph.p_vaddr)
+                    .max().unwrap();
+                let layout = Layout::from_size_align(data as usize, 4096).unwrap();
+                let mut ptr = self.allocator.alloc_os_mem(layout, AllocateType::AnyPages).unwrap();
                 let mut iter = elf.program_header_iter();
                 while let Some(h) = iter.next() {
-                    if h.ph.ph_type() == ProgramType::LOAD {
-                        // 初始化内存空间
-                        unsafe {
-                            self.allocator.memset(h.ph.p_paddr as *mut u8, h.ph.p_memsz as usize, 0);
-                            let src = buffer_ptr.add(h.ph.p_offset as usize);
-                            copy(src, h.ph.p_paddr as *mut u8, h.ph.p_filesz as usize);
-                        }
-                    }
-                    let layout = unsafe { Layout::from_size_align_unchecked(h.ph.p_memsz as usize, h.ph.p_align as usize) };
                     // 只需要加载LOAD指令段
+                    // CopyMem(ptr + h.p_vaddr, buffer_ptr + h.p_offset, h.p_filesz);
+                    // SetMem(ptr + h.p_vaddr + h.p_filesz,h.p_memsz - h.p_filesz,  0);
                     if h.ph.ph_type() == ProgramType::LOAD {
-                        let mut ptr = match h.ph.flags() {
-                            ProgramFlags::PF_R => self.allocator.alloc_os_mem(layout, AllocateType::Address(h.ph.p_paddr as usize)),
-                            ProgramFlags::PF_X | ProgramFlags::PF_W | ProgramFlags::PF_RW => self.allocator.alloc_ty(layout, AllocateType::Address(h.ph.p_paddr as usize), MemoryType::LOADER_DATA),
-                            _ => {
-                                panic!("no support flags right now");
-                            }
-                        }.unwrap();
                         unsafe {
+                            // 将文件内容写入申请的内存中
+                            let offset = ptr.as_ptr().add(h.ph.p_vaddr as usize);
                             let src = buffer_ptr.add(h.ph.p_offset as usize);
-                            copy(src, ptr.as_mut(), h.ph.p_filesz as usize);
-                        }
-                        // 如果p_memsz数据超过p_filesz需要将不足的部分用0填充
-                        if h.ph.p_memsz > h.ph.p_filesz {
-                            let fill_size = (h.ph.p_memsz - h.ph.p_filesz) as usize;
-                            // 将指针指向buffer_ptr中的p_filesz的位置
-                            let fill_ptr = src.add(h.ph.p_filesz as usize) as *mut u8;
-                            unsafe { self.allocator.memset(fill_ptr, fill_size, 0) };
+                            copy(src, offset, h.ph.p_filesz as usize);
+                            let fill_ptr = src.add((h.ph.p_filesz + h.ph.p_vaddr) as usize) as *mut u8;
+                            self.allocator.memset(fill_ptr, (h.ph.p_memsz - h.ph.p_filesz) as usize, 0);
                         }
                     }
                 }
+                unsafe { ptr.as_ptr().add(elf.header().entry as usize) as usize }
             }
-            Elf::Elf32(ref elf) => {}
+            Elf::Elf32(ref elf) => { 0 }
         }
     }
 

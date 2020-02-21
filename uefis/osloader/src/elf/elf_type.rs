@@ -164,7 +164,7 @@ pub enum ElfHeaderFlags {
     EF_SPARCV9_PSO,
     /// 非严格内存排序
     EF_SPARCV9_RMO,
-    Unknown(u32),
+    Unknown(u32)
 }
 
 

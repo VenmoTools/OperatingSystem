@@ -36,17 +36,21 @@ pub trait Seek {
 }
 
 pub trait Read {
-    fn read(&mut self, buf: &mut [u8]) -> UefiResult<Result<usize>>;
+    /// 读取尽可能多的文件数据并填充到`but`中，返回读取的字节数
+    /// #Error
+    /// 如果指定的缓冲区过小则返回`BUFFER_TOO_SMALL`并返回所需要的`size`
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
 
+    /// 读取指定字节数
+    /// 将读取到的数据填充至`buf`中
     fn read_exact(&mut self, mut buf: &mut [u8]) -> Result<()> {
         while !buf.is_empty() {
-            match self.read(buf).log_warning().unwrap() {
+            match self.read(buf) {
                 Ok(0) => break,
                 Ok(n) => {
                     let tmp = buf;
                     buf = &mut tmp[n..];
                 }
-                Err(ref e) if e.kind() == ErrorKind::Interrupted => {}
                 Err(e) => return Err(e),
             }
         }
@@ -62,6 +66,10 @@ pub trait Read {
         Initializer::zeroing()
     }
 
+    /// 读取所有字节，直到EOF，然后将它们填充至buf中。
+    /// 从该源读取的所有字节都将附加到指定的缓冲区buf。
+    /// 此函数会连续调用read()将更多数据填充到buf，直到read()返回Ok(0)
+    /// 如果成功，此函数将返回读取的字节总数
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
         read_to_end(self, buf)
     }
@@ -83,9 +91,6 @@ pub trait Write {
         }
         Ok(())
     }
-
-    /// 关闭并删除整个文件 ,调用该方法后会产生所有权移动
-    fn delete(self) -> Result<()>;
 }
 
 impl Seek for FileOperator {
@@ -103,16 +108,16 @@ impl Seek for FileOperator {
 }
 
 impl Read for FileOperator {
-    fn read(&mut self, buf: &mut [u8]) -> UefiResult<Result<usize>> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         match self.file.read(buf).log_warning() {
             Ok(size) => {
                 self.current += size as u64;
-                ok(size)
+                Ok(size)
             }
             Err(e) => {
                 match e.data() {
-                    Some(size) => err(Error::from_uefi_status(e.status(), Some(format!("buffer to small need {}", size).as_str()))),
-                    None => err(Error::from_uefi_status(e.status(), None))
+                    Some(size) => Err(Error::from_uefi_status(e.status(), Some(format!("buffer to small need {}", size).as_str()))),
+                    None => Err(Error::from_uefi_status(e.status(), None))
                 }
             }
         }
@@ -133,7 +138,9 @@ impl Write for FileOperator {
             Err(e) => Err(Error::from_uefi_status(e.status(), None))
         }
     }
+}
 
+impl FileOperator {
     fn delete(self) -> Result<()> {
         let res = self.file.delete();
         match res {
@@ -143,6 +150,9 @@ impl Write for FileOperator {
     }
 }
 
+const DEFAULT_BUFFER_SIZE: usize = 4096;
+
+/// 适用于文件和文件夹
 pub struct File {
     root: Directory,
     buffer: Vec<u8>,
@@ -161,12 +171,13 @@ impl File {
         }
     }
 
-    pub fn _new(bt: &BootServices) -> UefiResult<Self> {
+    /// new函数和try_new函数的辅助操作
+    fn _new(bt: &BootServices) -> UefiResult<Self> {
         let f = unsafe { &mut *bt.locate_protocol::<SimpleFileSystem>().log_warning()?.get() };
         let mut volume = f.open_volume().log_warning()?;
         Ok(Completion::from(File {
             root: volume,
-            buffer: vec![0_u8; 4096],
+            buffer: vec![0_u8; DEFAULT_BUFFER_SIZE],
         }))
     }
 
@@ -177,9 +188,8 @@ impl File {
             Err(e) => Err(Error::from_uefi_status(e.status(), None)),
         }
     }
-
-    /// 指定缓冲区容量大小
-    pub fn with_buffer_capacity(bt: &BootServices, size: usize) -> UefiResult<Self> {
+    /// with_buffer_capacity的辅助函数
+    fn capacity(bt: &BootServices, size: usize) -> UefiResult<Self> {
         let f = unsafe { &mut *bt.locate_protocol::<SimpleFileSystem>().log_warning()?.get() };
         let volume = f.open_volume().log_warning()?;
         Ok(Completion::from(File {
@@ -188,6 +198,14 @@ impl File {
         }))
     }
 
+    /// 指定缓冲区容量大小
+    pub fn with_buffer_capacity(bt: &BootServices, size: usize) -> Result<Self> {
+        match Self::capacity(bt, size).log_warning() {
+            Ok(f) => Ok(f),
+            Err(e) => Err(Error::from_uefi_status(e.status(), None))
+        }
+    }
+    /// 读取根目录信息
     fn read_entry(&mut self) -> Result<&mut FileInfo> {
         return match self.root.read_entry(self.buffer.as_mut_slice()).log_warning() {
             Ok(info) => {
@@ -196,7 +214,7 @@ impl File {
             Err(e) => Err(Error::from_uefi_status(e.status(), None))
         };
     }
-
+    /// 读取根目录属性
     fn root_attribute(&mut self) -> Result<FileAttribute> {
         match self.read_entry() {
             Ok(info) => Ok(info.attribute()),
@@ -269,8 +287,6 @@ impl File {
 
     /// `open`函数的底层方法
     fn _open(&mut self, filename: &str, mode: FileMode, mut attr: FileAttribute) -> UefiResult<Result<FileOperator>> {
-        if let Ok(handle) = self.root.open(filename, mode, attr).log_warning() {}
-
         if let FileMode::CreateReadWrite = mode {
             attr = FileAttribute::VALID_ATTR;
         }
@@ -311,12 +327,14 @@ fn read_to_end<R: Read + ?Sized>(r: &mut R, buf: &mut Vec<u8>) -> Result<usize> 
     read_to_end_with_reservation(r, buf, |_| 32)
 }
 
-fn read_to_end_with_reservation<R, F>(r: &mut R, buf: &mut Vec<u8>, mut reservation_size: F) -> Result<usize> where R: Read + ?Sized, F: FnMut(&R) -> usize, {
+fn read_to_end_with_reservation<R, F>(r: &mut R, buf: &mut Vec<u8>, mut reservation_size: F) -> Result<usize>
+    where R: Read + ?Sized, F: FnMut(&R) -> usize
+{
     let start_len = buf.len();
     let mut g = Guard { len: buf.len(), buf };
-    let ret;
+    let ret: Result<usize>;
     loop {
-        //
+        // 缓冲区的长度等于缓冲区的长度时需要进行扩容
         if g.len == g.buf.len() {
             // 进行扩容
             g.buf.reserve(reservation_size(r));
@@ -325,18 +343,20 @@ fn read_to_end_with_reservation<R, F>(r: &mut R, buf: &mut Vec<u8>, mut reservat
             unsafe {
                 // 设置缓冲区容量
                 g.buf.set_len(capacity);
-                // 初始化缓冲区新扩容的内存
+                // 初始化缓冲区新扩容的内存 只需要初始化新增的内存
                 r.initializer().initialize(&mut g.buf[g.len..]);
             }
         }
         // 将数据读取至扩容部分
-        match r.read(&mut g.buf[g.len..]).log_warning().unwrap() {
+        match r.read(&mut g.buf[g.len..]) {
+            // 没有读取到数据
             Ok(0) => {
+                // // 读取的内存大小 = 读取后的大小 - 读取前的大小
                 ret = Ok(g.len - start_len);
                 break;
             }
+            // 记录每次读取的字节数
             Ok(n) => g.len += n,
-            Err(ref e) if e.kind() == ErrorKind::Interrupted => {}
             Err(e) => {
                 ret = Err(e);
                 break;
@@ -352,20 +372,12 @@ fn read_to_end_with_reservation<R, F>(r: &mut R, buf: &mut Vec<u8>, mut reservat
 pub struct Initializer(bool);
 
 impl Initializer {
-    /// Returns a new `Initializer` which will zero out buffers.
+    /// 表明需要对缓冲区进行初始化操作
     #[inline]
     pub fn zeroing() -> Initializer {
         Initializer(true)
     }
-
-    /// Returns a new `Initializer` which will not zero out buffers.
-    ///
-    /// # Safety
-    ///
-    /// This may only be called by `Read`ers which guarantee that they will not
-    /// read from buffers passed to `Read` methods, and that the return value of
-    /// the method accurately reflects the number of bytes that have been
-    /// written to the head of the buffer.
+    /// 表明不会对缓冲区进行初始化操作
     #[inline]
     pub unsafe fn nop() -> Initializer {
         Initializer(false)

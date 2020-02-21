@@ -17,8 +17,8 @@ lazy_static! {
 #[doc(hidden)]
 pub fn _print(arg: ::core::fmt::Arguments) {
     use core::fmt::Write;
-    use x86_64::instructions::interrupts;
-    interrupts::without_interrupts(|| {
+    use system::ia_32e::instructions::interrupt::without_interrupts;
+    without_interrupts(|| {
         SERIAL.lock().write_fmt(arg).expect("Printing to Serial failed!");
     });
 }

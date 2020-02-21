@@ -178,9 +178,9 @@ extern "x86-interrupt" fn breakpoint(stackframe: &mut InterruptStackFrame) {
 /// 3、当使用malloc/mmap等希望访问物理空间的库函数/系统调用后，由于linux并未真正给新创建的vma映射物理页，此时若先进行写操作，将如上面的2的情况产生缺页异常，若先进行读操作虽也会产生缺页异常，将被映射给默认的零页(zero_pfn)，等再进行写操作时，仍会产生缺页异常，这次必须分配物理页了，进入写时复制的流程；
 /// 4、当使用fork等系统调用创建子进程时，子进程不论有无自己的vma，“它的”vma都有对于物理页的映射，但它们共同映射的这些物理页属性为只读，即linux并未给子进程真正分配物理页，当父子进程任何一方要写相应物理页时，导致缺页异常的写时复制
 extern "x86-interrupt" fn page_fault(stackframe: &mut InterruptStackFrame, code: PageFaultErrorCode) {
-    use x86_64::registers::control::Cr2;
+    use system::ia_32e::cpu::control::CR2;
     println!("EXCEPTION:PageFault");
-    println!("Access Address:{:?}", Cr2::read());
+    println!("Access Address:{:?}", CR2::read());
     println!("Error Code:{:?}", code);
     println!("{:#?}", stackframe);
     loop_hlt();

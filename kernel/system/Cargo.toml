@@ -17,5 +17,3 @@ default-features = false
 [dependencies.bitflags]
 version = "1.0.4"
 
-[dependencies]
-x86 = "0.18.1"

@@ -41,20 +41,6 @@ pub unsafe fn read_cr3() -> u64 {
     value
 }
 
-/// 从msr寄存器中读取64位数据
-pub unsafe fn read(data: u32) -> u64 {
-    let (high, low): (u32, u32);
-    asm!("rdmsr" : "={eax}" (low), "={edx}" (high) : "{ecx}" (data) : "memory" : "volatile");
-    ((high as u64) << 32) | (low as u64)
-}
-
-/// 从msr寄存器中写入64位数据
-pub unsafe fn write(data: &mut u32, value: u64) {
-    let low = value as u32;
-    let high = (value >> 32) as u32;
-    asm!("wrmsr" :: "{ecx}" (data), "{eax}" (low), "{edx}" (high) : "memory" : "volatile" );
-}
-
 /// 从CR4寄存器读取64位数据
 #[inline]
 pub unsafe fn read_cr4() -> u64 {
@@ -71,6 +57,7 @@ pub unsafe fn write_cr4(data: u64) {
 
 
 /// 从当前RFLAGS 寄存器中读取64位数据
+#[inline]
 pub unsafe fn read_rflags() -> u64 {
     let mut r: u64 = 0;
     asm!("pushfq; popq $0" : "=r"(r) :: "memory");
@@ -78,6 +65,7 @@ pub unsafe fn read_rflags() -> u64 {
 }
 
 /// 将`val`值写入rflags寄存器
+#[inline]
 pub unsafe fn write_raw(val: u64) {
     asm!("pushq $0; popfq" :: "r"(val) : "memory" "flags");
 }
@@ -95,18 +83,21 @@ pub fn read_rip() -> u64 {
     rip
 }
 
-
+/// 从msr寄存器中读取64位数据
+#[inline]
 pub unsafe fn rdmsr(msr: u32) -> u64 {
-    let (high, low) = (0_u32, 0_32);
+    let (mut high, mut low) = (0_u32, 0_32);
     asm!("rdmsr"
         : "={eax}"(low),"={edx}"(high)
-        : "={ecx}"(msr)
+        : "{ecx}"(msr)
         : "memory"
         : "volatile"
         );
     ((high as u64) << 32) | (low as u64)
 }
 
+/// 从msr寄存器中写入64位数据
+#[inline]
 pub unsafe fn wrmsr(msr: u32, data: u64) {
     let low = data as u32;
     let high = (data >> 32) as u32;

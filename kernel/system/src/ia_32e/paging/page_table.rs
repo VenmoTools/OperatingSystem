@@ -1,5 +1,5 @@
 use core::fmt;
-use core::ops::{Add, AddAssign, Index, IndexMut};
+use core::ops::{Index, IndexMut};
 
 use crate::bits::PageTableFlags;
 use crate::ia_32e::PhysAddr;

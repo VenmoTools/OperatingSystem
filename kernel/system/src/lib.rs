@@ -22,6 +22,7 @@ pub mod bits;
 mod mutex;
 pub mod ia_32e;
 pub mod result;
+pub mod devices;
 
 
 #[cfg(test)]

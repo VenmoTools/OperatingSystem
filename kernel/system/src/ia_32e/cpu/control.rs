@@ -1,4 +1,3 @@
-use crate::bitflags::bitflags;
 use crate::bits::{CR0Flags, CR3Flags, CR4Flags};
 use crate::ia_32e::{PhysAddr, VirtAddr};
 use crate::ia_32e::instructions::register::read_cr4;

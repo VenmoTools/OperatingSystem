@@ -31,7 +31,6 @@ pub fn int_n(n: u32) {
         asm!("int $0" :: "N" (n) :: "volatile");
     }
 }
-
 /// 暂停CPU，直到下一个中断到达。
 #[inline]
 pub fn hlt() {

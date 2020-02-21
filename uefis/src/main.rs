@@ -35,8 +35,6 @@ mod fs;
 
 
 static mut KERNEL_ENTRY: u64 = 0;
-static KERNEL_NAME: &'static str = "kernel";
-static mut KERNEL_SIZE: usize = 0;
 
 //type ENTRY = extern "C" fn(SystemTable<Runtime>, MemoryMapIter) -> !;
 type ENTRY = extern "C" fn();
@@ -60,8 +58,7 @@ fn efi_main(image: Handle, st: SystemTable<Boot>) -> Status {
     let mut allocator = osloader::Allocator::new(bt);
 
     let mut loader = osloader::ElfLoader::new(allocator, Elf::from_bytes(buf.as_slice()).unwrap());
-    loader.load_memory();
-    unsafe { KERNEL_ENTRY = loader.entry_point() as u64 };
+    unsafe { KERNEL_ENTRY = loader.load_memory() as u64 };
     let rs = st.runtime_services();
     shutdown(image, st);
     loop {}
@@ -75,7 +72,7 @@ fn shutdown(image: uefi::Handle, st: SystemTable<Boot>) {
 
     info!("{:#X?}", kernel_entry as *const u64);
     info!("exit boot services...");
-    show_memory_layout(st.boot_services());
+//    show_memory_layout(st.boot_services());
 
 //    if let Err(e) = st.stdout().reset(false).log_warning() {
 //        error!("{:?}", e);

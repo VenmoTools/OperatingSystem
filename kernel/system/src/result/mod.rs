@@ -7,6 +7,11 @@ pub mod error;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+pub trait ResultEx<T> {
+    fn unwrap(self) -> T;
+}
+
+#[derive(Debug)]
 pub struct Error {
     repr: Repr,
 }
@@ -17,7 +22,16 @@ impl Error {
     }
 }
 
+impl<T> ResultEx<T> for Result<T> {
+    fn unwrap(self) -> T {
+        match self {
+            Ok(t) => t,
+            Err(e) => panic!("{:?}", e)
+        }
+    }
+}
 
+#[derive(Debug)]
 pub enum Repr {
     Memory(MemoryError)
 }

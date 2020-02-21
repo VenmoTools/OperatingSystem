@@ -2,6 +2,7 @@ pub use page_ops::{PageIndex, PageOffset};
 pub use page_table::{ENTRY_COUNT, PageTable, PageTableEntry};
 
 use crate::ia_32e::PhysAddr;
+use crate::result::ResultEx;
 
 ///! 提供了内存分页功能
 mod page;
@@ -19,7 +20,7 @@ pub struct PagingInfo {
 pub unsafe fn enable_paging(pt_base: PhysAddr) {
     use core::ptr::{write, write_bytes};
     use crate::ia_32e::cpu::control::{CR3, CR0, CR4};
-    use crate::bits::{CR4Flags, CR3Flags, CR0Flags, EferFlags};
+    use crate::bits::{CR4Flags, CR0Flags, EferFlags};
     use crate::ia_32e::paging::frame::Frame;
     use crate::ia_32e::cpu::msr;
 
@@ -37,7 +38,7 @@ pub unsafe fn enable_paging(pt_base: PhysAddr) {
 
     // Enable Long mode and NX bit
     let mut msr_flag = msr::Efer::read();
-    msr_flag |= EferFlags::NO_EXECUTE_ENABLE | LONG_MODE_ENABLE;
+    msr_flag |= EferFlags::NO_EXECUTE_ENABLE | EferFlags::LONG_MODE_ENABLE;
     msr::Efer::write(msr_flag);
 
     // 重新设置新的内存布局

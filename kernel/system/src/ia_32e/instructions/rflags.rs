@@ -18,7 +18,6 @@ pub fn read_flags() -> RFlags {
 pub fn write(val: u64) {
     unsafe { asm!("pushq $0; popfq" :: "r"(val) : "memory" "flags") };
 }
-
 /// 写入REFLAGS寄存器
 pub fn write_flags(flags: RFlags) {
     let old_value = read();
