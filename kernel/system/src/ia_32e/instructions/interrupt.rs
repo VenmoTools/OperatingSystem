@@ -39,7 +39,7 @@ pub fn hlt() {
     }
 }
 
-/// Returns whether interrupts are enabled.
+/// 返回是否启用中断。
 pub fn are_enabled() -> bool {
     use crate::bits::RFlags;
     use super::rflags::read_flags;

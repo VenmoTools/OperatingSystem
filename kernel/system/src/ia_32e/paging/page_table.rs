@@ -5,6 +5,9 @@ use crate::bits::PageTableFlags;
 use crate::ia_32e::PhysAddr;
 
 use super::PageIndex;
+use crate::ia_32e::paging::frame::Frame;
+use crate::ia_32e::paging::result::FrameError;
+use crate::ia_32e::paging::page::{Page4KB, PageSize};
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]
@@ -30,8 +33,37 @@ impl PageTableEntry {
         PageTableFlags::from_bits_truncate(self.entry)
     }
     /// 获取当前实体所映射的物理地址
-    pub fn addr(&self) -> PhysAddr{
-        PhysAddr::new( self.entry & 0x000fffff_fffff000)
+    pub fn addr(&self) -> PhysAddr {
+        PhysAddr::new(self.entry & 0x000FFFFF_FFFFF000)
+    }
+    /// 返回当前Entry的物理帧
+    /// # Error
+    /// * `FrameError::FrameNotPresent` 表示当前Entry没有被置`PRESENT`位
+    pub fn frame(&self) -> Result<Frame, FrameError> {
+        if !self.flags().contains(PageTableFlags::PRESENT) {
+            Err(FrameError::FrameNotPresent)
+        } else if self.flags().contains(PageTableFlags::HUGE_PAGE) {
+            Err(FrameError::HugeFrame)
+        } else {
+            Ok(Frame::include_address(self.addr()))
+        }
+    }
+
+    /// 将entry与物理地址做映射
+    pub fn set_addr(&mut self, phy: PhysAddr, flags: PageTableFlags) {
+        assert!(phy.is_aligned(Page4KB::P_SIZE));
+        self.entry = phy.as_u64() | flags.bits();
+    }
+
+    /// 将entry与指定的物理帧做映射
+    pub fn set_frame(&mut self, f: Frame, flags: PageTableFlags) {
+        assert!(!flags.contains(PageTableFlags::HUGE_PAGE));
+        self.set_addr(f.start_address(), flags)
+    }
+
+    /// 为entry设置指定Flags
+    pub fn set_flags(&mut self, flags: PageTableFlags) {
+        self.entry = self.addr().as_u64() | flags.bits()
     }
 }
 

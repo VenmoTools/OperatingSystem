@@ -7,6 +7,8 @@ pub mod descriptor;
 pub mod instructions;
 pub mod paging;
 pub mod cpu;
+pub mod apic;
+pub mod acpi;
 
 /// 系统特权级
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

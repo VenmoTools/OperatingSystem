@@ -1,6 +1,4 @@
 use core::fmt;
-use core::fmt::{Error, Formatter};
-
 use crate::alloc::string::String;
 
 #[derive(Debug)]

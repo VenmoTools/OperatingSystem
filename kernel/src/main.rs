@@ -13,19 +13,22 @@ extern crate kernel;
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::panic::PanicInfo;
-use kernel::{devices, Initializer, loop_hlt};
+
 use uefi::prelude::SystemTable;
 use uefi::table::boot::MemoryMapIter;
 use uefi::table::Runtime;
 
+#[allow(unused_imports)]
+use kernel::{devices, Initializer, loop_hlt};
+
 struct Allocate;
 
 unsafe impl GlobalAlloc for Allocate {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+    unsafe fn alloc(&self, _layout: Layout) -> *mut u8 {
         unimplemented!()
     }
 
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
         unimplemented!()
     }
 }
@@ -34,13 +37,13 @@ unsafe impl GlobalAlloc for Allocate {
 static ALLOCATOR: Allocate = Allocate;
 
 #[alloc_error_handler]
-fn handler(layout: Layout) -> ! {
+fn handler(_layout: Layout) -> ! {
     loop_hlt()
 }
 
 
 #[no_mangle]
-pub extern "C" fn _start(st: SystemTable<Runtime>, it: MemoryMapIter) -> ! {
+pub extern "C" fn _start(_st: SystemTable<Runtime>, _it: MemoryMapIter) -> ! {
     println!("Hello World");
     let cpuid = raw_cpuid::CpuId::new();
     println!("cpu info:{:?}", cpuid.get_vendor_info().unwrap().as_string());

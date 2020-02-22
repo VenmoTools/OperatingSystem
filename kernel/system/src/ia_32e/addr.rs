@@ -1,10 +1,10 @@
-use core::convert::{Into, TryInto};
+use core::convert::Into;
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::result::Result;
-use ux::*;
 
 use crate::bits::BitOpt;
+use crate::ia_32e::paging::{PageIndex, PageOffset};
 
 /// Virtual Address 虚拟地址
 /// IA-32e模型线性地址的寻址能力只有48位，第48位用于线性地址寻址，高16位作为符号扩展
@@ -148,28 +148,28 @@ impl VirtAddr {
     /// +------+---------------+-----------------------------+
     ///
     /// 
-    pub fn page_offset(&self) -> u12 {
-        u12::new((self.0 & 0xFFF).try_into().unwrap())
+    pub fn page_offset(&self) -> PageOffset {
+        PageOffset::new_truncate(self.0 as u16)
     }
 
     /// 返回一级页表索引（9位）
-    pub fn page1_index(&self) -> u9 {
-        u9::new(((self.0 >> 12) & 0o777).try_into().unwrap())
+    pub fn page1_index(&self) -> PageIndex {
+        PageIndex::new_truncate((self.0 >> 12) as u16)
     }
 
     /// 返回二级页表索引（9位）
-    pub fn page2_index(&self) -> u9 {
-        u9::new(((self.0 >> 12 >> 9) & 0o777).try_into().unwrap())
+    pub fn page2_index(&self) -> PageIndex {
+        PageIndex::new_truncate((self.0 >> 12 >> 9) as u16)
     }
 
     /// 返回三级页表索引（9位）
-    pub fn page3_index(&self) -> u9 {
-        u9::new(((self.0 >> 12 >> 9 >> 9) & 0o777).try_into().unwrap())
+    pub fn page3_index(&self) -> PageIndex {
+        PageIndex::new_truncate((self.0 >> 12 >> 9 >> 9) as u16)
     }
 
     /// 返回四级页表索引（9位）
-    pub fn page4_index(&self) -> u9 {
-        u9::new(((self.0 >> 12 >> 9 >> 9 >> 9) & 0o777).try_into().unwrap())
+    pub fn page4_index(&self) -> PageIndex {
+        PageIndex::new_truncate((self.0 >> 12 >> 9 >> 9 >> 9) as u16)
     }
     /// 将虚拟地址向上对齐
     pub fn align_up<U>(self, align: U) -> Self where U: Into<u64> {
@@ -249,7 +249,7 @@ impl Sub<usize> for VirtAddr {
 #[cfg(target_pointer_width = "64")]
 impl SubAssign<usize> for VirtAddr {
     fn sub_assign(&mut self, rhs: usize) {
-        self.sub(cast::u64(rhs));
+        *self = self.sub(cast::u64(rhs))
     }
 }
 

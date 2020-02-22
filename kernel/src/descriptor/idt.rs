@@ -1,8 +1,9 @@
-use lazy_static::lazy_static;
 use system::bits::PageFaultErrorCode;
 use system::ia_32e::cpu::ChainedPics;
 use system::ia_32e::descriptor::{InterruptDescriptorTable, InterruptStackFrame};
 use system::Mutex;
+
+use lazy_static::lazy_static;
 
 use crate::{loop_hlt, print, println};
 use crate::descriptor::gdt;
@@ -126,7 +127,7 @@ extern "x86-interrupt" fn keyboard_interrupt(_stackframe: &mut InterruptStackFra
 
     let mut keyboard = KEYBOARD.lock();
     let mut port = unsafe { Port::new(0x60) };
-    let scan_code: u8 = unsafe { port.read() };
+    let scan_code: u8 = port.read();
 
     if let Ok(Some(key_event)) = keyboard.add_byte(scan_code) {
         if let Some(key) = keyboard.process_keyevent(key_event) {

@@ -41,9 +41,9 @@ pub fn efi_build_step(path: &Path) -> std::io::Result<ExitStatus> {
 
 pub fn copy_file(path: &Path) -> std::io::Result<()> {
     //构建内核路径 $WORK_DIR/kernel/target/x86-64/debug/kernel
-    let src_kernel_path = path.join(r"kernel\target\x86-64\debug\kernel");
+    let src_kernel_path = path.join(r"kernel\target\x86-64\release\kernel");
     //构建efi文件路径 $WORK_DIR/uefis/target/x86_64-unknown-uefi/debug/uefis.efi
-    let uefi_path = path.join(r"uefis\target\x86_64-unknown-uefi\debug\uefis.efi");
+    let uefi_path = path.join(r"uefis\target\x86_64-unknown-uefi\release\uefis.efi");
     // 构建uefi启动目录 $WORK_DIR/target/debug/esp/EFI/Boot
     let dest_path = path.join(r"target\debug\esp\EFI\Boot");
 

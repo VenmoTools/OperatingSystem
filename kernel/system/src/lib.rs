@@ -6,9 +6,9 @@
 
 #![warn(missing_docs)]
 #![feature(abi_x86_interrupt)]
-#![cfg_attr(feature = "deny-warnings", deny(warnings))]
-#![cfg_attr(feature = "deny-warnings", deny(missing_docs))]
-#![cfg_attr(not(feature = "deny-warnings"), warn(missing_docs))]
+#![cfg_attr(feature = "deny-warnings", allow(warnings))]
+#![cfg_attr(feature = "deny-warnings", allow(missing_docs))]
+#![cfg_attr(not(feature = "deny-warnings"), allow(missing_docs))]
 
 
 #[macro_use]

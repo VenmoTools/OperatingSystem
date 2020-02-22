@@ -19,6 +19,7 @@ pub enum Flags {
 }
 
 /// 用于保存进程信息
+#[allow(dead_code)]
 struct ProcessInfo {
     /// 内核栈基址
     rsp0: i64,

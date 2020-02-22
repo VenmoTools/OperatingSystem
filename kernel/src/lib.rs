@@ -6,9 +6,6 @@
 #![reexport_test_harness_main = "test_main"]
 #![feature(abi_x86_interrupt)]
 
-#[cfg(target_arch = "x86_64")]
-use core::panic::PanicInfo;
-
 pub mod serial;
 pub mod descriptor;
 pub mod process;

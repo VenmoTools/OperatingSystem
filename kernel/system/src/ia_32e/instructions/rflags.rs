@@ -8,12 +8,10 @@ pub fn read() -> u64 {
     };
     r
 }
-
 /// 读取RFLAGS寄存器转为RFLAGS
 pub fn read_flags() -> RFlags {
     RFlags::from_bits_truncate(read())
 }
-
 /// 写入REFLAGS寄存器原始数据
 pub fn write(val: u64) {
     unsafe { asm!("pushq $0; popfq" :: "r"(val) : "memory" "flags") };

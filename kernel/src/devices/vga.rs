@@ -3,9 +3,11 @@
 // 15       位为  闪烁文字
 
 use core::fmt;
-use lazy_static::lazy_static;
+
 use system::Mutex;
 use volatile::Volatile;
+
+use lazy_static::lazy_static;
 
 pub const BUFFER_HEIGHT: usize = 25;
 pub const BUFFER_WIDTH: usize = 80;
@@ -39,7 +41,6 @@ pub fn _print(arg: fmt::Arguments) {
 
 #[doc(hidden)]
 pub fn _log(line: &str) {
-    use core::line;
     _print(format_args!("{} ,in file:{},at line:{} ", line, file!(), line!()));
 }
 

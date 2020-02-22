@@ -2,7 +2,6 @@ pub use page_ops::{PageIndex, PageOffset};
 pub use page_table::{ENTRY_COUNT, PageTable, PageTableEntry};
 
 use crate::ia_32e::PhysAddr;
-use crate::result::ResultEx;
 
 ///! 提供了内存分页功能
 mod page;
@@ -10,6 +9,8 @@ mod page_table;
 mod page_ops;
 pub mod frame;
 pub mod allocator;
+mod mapper;
+pub mod result;
 
 pub struct PagingInfo {
     pt_base: PhysAddr,
@@ -18,7 +19,7 @@ pub struct PagingInfo {
 
 /// 启动4KB分页
 pub unsafe fn enable_paging(pt_base: PhysAddr) {
-    use core::ptr::{write, write_bytes};
+    use core::ptr::write_bytes;
     use crate::ia_32e::cpu::control::{CR3, CR0, CR4};
     use crate::bits::{CR4Flags, CR0Flags, EferFlags};
     use crate::ia_32e::paging::frame::Frame;

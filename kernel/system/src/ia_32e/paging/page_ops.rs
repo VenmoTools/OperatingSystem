@@ -1,5 +1,6 @@
 use super::ENTRY_COUNT;
 
+/// 页表的9位索引。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PageIndex(u16);
 
@@ -9,6 +10,10 @@ impl PageIndex {
     pub fn new(index: u16) -> Self {
         assert!(usize::from(index) < ENTRY_COUNT);
         Self(index)
+    }
+    /// 索引最大不能超过512个
+    pub const fn new_truncate(index: u16) -> Self {
+        Self(index % ENTRY_COUNT as u16)
     }
 }
 
@@ -40,6 +45,11 @@ impl PageOffset {
     pub fn new(offset: u16) -> Self {
         assert!(offset < (1 << 12));
         Self(offset)
+    }
+
+    /// 永远小于 >=4096.
+    pub const fn new_truncate(offset: u16) -> Self {
+        Self(offset % (1 << 12))
     }
 }
 

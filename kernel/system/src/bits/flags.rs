@@ -16,6 +16,7 @@ bitflags! {
 
 bitflags! {
     /// PTE flag
+    #[allow(non_upper_case_globals)]
     pub struct PageTableFlags: u64 {
         /// 页存在标志位，如果置1表示存在否则表示不存在
         const PRESENT =         1 << 0;
@@ -52,9 +53,9 @@ bitflags! {
         const BIT_58 =          1 << 58;
         const BIT_59 =          1 << 59;
         /// Protection key如果CR4.PKE=1表示页不保护键，可以忽略
-        const Protection_60 =          1 << 60;
-        const Protection_61 =          1 << 61;
-        const Protection_62 =          1 << 62;
+        const PROTECTION_60 =          1 << 60;
+        const PROTECTION_61 =          1 << 61;
+        const PROTECTION_62 =          1 << 62;
         /// 如果IA32_EFER.NXE = 1，则禁用执行
         /// （如果为1，则不允许从此条目控制的1 GB页面中提取指令；请参见4.6节）
         /// 否则，保留（必须为0）
@@ -63,26 +64,26 @@ bitflags! {
     }
 }
 
-// GDT 描述符标志位
-// 代码段描述符标志位
-// 位43  42 	41 	40 	描述符类型 	说明
-//  1 	  0 	0 	0 	代码 	    仅执行
-//  1 	  0 	0 	1 	代码 	    仅执行，已访问
-//  1 	  0 	1 	0 	代码 	    执行/可读
-//  1 	  0 	1 	1 	代码 	    执行/可读，已访问
-//  1 	  1 	0 	0 	代码 	    一致性段，仅执行
-//  1 	  1 	0 	1 	代码 	    一致性段，仅执行，已访问
-//  1 	  1 	1 	0 	代码 	    一致性段，执行/可读
-//  1 	  1 	1 	1 	代码 	    一致性段，执行/可读，已访问
-// 代码段描述符
-// 43  42  41  40 	说明
-// 0 	0   0   0   16B描述符的高8B
-// 0 	0   1   0   LDT段描述符
-// 1 	0 	0 	1 	64位TSS段描述符
-// 1 	0 	1 	1 	64位TSS段描述符
-// 1 	1 	1 	0 	64位中断门描述符
-// 1 	1 	1 	1 	64位陷进门描述符
 bitflags! {
+   /// GDT 描述符标志位
+   /// 代码段描述符标志位
+   /// 位43  42 	41 	40 	描述符类型 	说明
+   ///  1 	  0 	0 	0 	代码 	    仅执行
+   ///  1 	  0 	0 	1 	代码 	    仅执行，已访问
+   ///  1 	  0 	1 	0 	代码 	    执行/可读
+   ///  1 	  0 	1 	1 	代码 	    执行/可读，已访问
+   ///  1 	  1 	0 	0 	代码 	    一致性段，仅执行
+   ///  1 	  1 	0 	1 	代码 	    一致性段，仅执行，已访问
+   ///  1 	  1 	1 	0 	代码 	    一致性段，执行/可读
+   ///  1 	  1 	1 	1 	代码 	    一致性段，执行/可读，已访问
+   /// 代码段描述符
+   /// 43  42  41  40 	说明
+   /// 0 	0   0   0   16B描述符的高8B
+   /// 0 	0   1   0   LDT段描述符
+   /// 1 	0 	0 	1 	64位TSS段描述符
+   /// 1 	0 	1 	1 	64位TSS段描述符
+   /// 1 	1 	1 	0 	64位中断门描述符
+   /// 1 	1 	1 	1 	64位陷进门描述符
    pub struct DescriptorFlags: u64 {
         const WRITABLE          = 1 << 41;
         const CONFORMING        = 1 << 42;
@@ -94,9 +95,8 @@ bitflags! {
     }
 }
 
-/// CR0寄存器
 bitflags! {
-    /// Configuration flags of the Cr0 register.
+    /// CR0寄存器.标志位
     pub struct CR0Flags: u64 {
         /// Enables protected mode.
         const PROTECTED_MODE_ENABLE = 1 << 0;
@@ -127,9 +127,9 @@ bitflags! {
         const PAGING = 1 << 31;
     }
 }
-/// CR3寄存器
+
 bitflags! {
-    /// Controls cache settings for the level 4 page table.
+    /// CR3寄存器用于设置4级页表
     pub struct CR3Flags: u64 {
         /// Use a writethrough cache policy for the P4 table (else a writeback policy is used).
         const PAGE_LEVEL_WRITETHROUGH = 1 << 3;
@@ -137,9 +137,10 @@ bitflags! {
         const PAGE_LEVEL_CACHE_DISABLE = 1 << 4;
     }
 }
-/// CR4寄存器
+
 bitflags! {
     /// Controls cache settings for the level 4 page table.
+    /// CR4寄存器 用于设置4级页表
     pub struct CR4Flags: u64 {
         /// Enables hardware-supported performance enhancements for software running in
         /// virtual-8086 mode.
@@ -194,9 +195,9 @@ bitflags! {
         const PROTECTION_KEY = 1 << 22;
     }
 }
-/// RFlags寄存器
+
 bitflags! {
-    /// The RFLAGS register.
+    /// RFlags寄存器
     pub struct RFlags: u64 {
         /// Processor feature identification flag.
         ///
@@ -252,9 +253,9 @@ bitflags! {
     }
 }
 
-/// Efer
 bitflags! {
-    /// Flags of the Extended Feature Enable Register.
+    /// 当IA32-EFER寄存器中的某位被设置并且PAE(Physical Address Extensions，物理地址扩展)模式被启用
+    /// Extended Feature Enable Register
     pub struct EferFlags: u64 {
         /// Enables the `syscall` and `sysret` instructions.
         const SYSTEM_CALL_EXTENSIONS = 1 << 0;
