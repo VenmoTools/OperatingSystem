@@ -1,9 +1,12 @@
-use crate::ia_32e::paging::page::{PageSize, Page, Page4KB, Page1GB, Page2MB};
+pub use map_pt::{MappedPageTable, PhysicalToVirtual};
+pub use pt_offset::{PageTableOffset, PhysOffset};
+
+use crate::bits::PageTableFlags;
+use crate::ia_32e::{PhysAddr, VirtAddr};
 use crate::ia_32e::paging::allocator::{FrameAllocator, UnusedFrame};
 use crate::ia_32e::paging::frame::Frame;
-use crate::bits::PageTableFlags;
-use crate::ia_32e::paging::result::{MapToError, UnmapError, FlagUpdateError, TranslateError, TranslationResult};
-use crate::ia_32e::{VirtAddr, PhysAddr};
+use crate::ia_32e::paging::page::{Page, Page1GB, Page2MB, Page4KB, PageSize};
+use crate::ia_32e::paging::result::{FlagUpdateError, MapToError, TranslateError, TranslationResult, UnmapError};
 
 pub mod map_pt;
 pub mod pt_offset;
@@ -14,7 +17,7 @@ pub mod pt_offset;
 pub struct MapperFlush<S: PageSize>(Page<S>);
 
 impl<S: PageSize> MapperFlush<S> {
-    fn new(page: Page<S>) -> Self {
+    pub fn new(page: Page<S>) -> Self {
         Self(page)
     }
 
@@ -26,7 +29,6 @@ impl<S: PageSize> MapperFlush<S> {
 
     pub fn ignore(self) {}
 }
-
 
 pub trait Mapper<S: PageSize> {
     /// 在页表中创建一个新的映射。

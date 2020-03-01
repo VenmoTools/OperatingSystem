@@ -1,10 +1,8 @@
 #![no_std]
-#![cfg_attr(test, no_main)]
 #![feature(exclusive_range_pattern)]
-#![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
-#![reexport_test_harness_main = "test_main"]
 #![feature(abi_x86_interrupt)]
+
+extern crate alloc;
 
 pub mod serial;
 pub mod descriptor;
@@ -32,7 +30,6 @@ impl Initializer {
         system::ia_32e::instructions::interrupt::enable();
     }
 }
-
 
 pub fn loop_hlt() -> ! {
     loop {

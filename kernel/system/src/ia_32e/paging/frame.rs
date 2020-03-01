@@ -22,8 +22,8 @@ impl<S: PageSize> Frame<S> {
     /// # Error
     /// 当给定地址没有进行对齐是返回`NotAligned`错误
     pub fn from_start_addr(addr: PhysAddr) -> Result<Self> {
-        if addr.is_aligned(S::P_SIZE) {
-            return Err(Error::new_memory(MemErrorKind::NotAligned, format!("the addres `{:#X}` is not align by {}", addr.as_u64(), S::P_SIZE)));
+        if !addr.is_aligned(S::P_SIZE) {
+            return Err(Error::new_memory(MemErrorKind::NotAligned, format!("the address `{:#X}` is not align by {}", addr.as_u64(), S::P_SIZE)));
         }
         Ok(Self::include_address(addr))
     }
@@ -44,7 +44,101 @@ impl<S: PageSize> Frame<S> {
     pub fn size(&self) -> u64 {
         S::P_SIZE
     }
+
+    /// 遍历给定的起始帧到终止帧范围，包含终止帧
+    pub fn frame_range_include(start: Self, end: Self) -> FrameRangeInclude<S> {
+        FrameRangeInclude {
+            start,
+            end,
+        }
+    }
+    /// 遍历给定的起始帧到终止帧范围，包含终止帧
+    pub fn frame_range(start: Self, end: Self) -> FrameRange<S> {
+        FrameRange {
+            start,
+            end,
+        }
+    }
 }
+
+/// 物理内存范围
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
+pub struct FrameRangeInclude<S: PageSize = Page4KB> {
+    /// 起始.
+    pub start: Frame<S>,
+    /// 终止包含.
+    pub end: Frame<S>,
+}
+
+impl<S: PageSize> FrameRangeInclude<S> {
+    pub fn is_empty(&self) -> bool {
+        !(self.start <= self.end)
+    }
+}
+
+impl<S: PageSize> Iterator for FrameRangeInclude<S> {
+    type Item = Frame<S>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.start <= self.end {
+            let frame = self.start.clone();
+            self.start += 1;
+            Some(frame)
+        } else {
+            None
+        }
+    }
+}
+
+impl<S: PageSize> fmt::Debug for FrameRangeInclude<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("FrameRangeInclude")
+            .field("start", &self.start)
+            .field("end", &self.end)
+            .finish()
+    }
+}
+
+/// 物理内存范围
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
+pub struct FrameRange<S: PageSize = Page4KB> {
+    /// 起始.
+    pub start: Frame<S>,
+    /// 终止不包含.
+    pub end: Frame<S>,
+}
+
+impl<S: PageSize> FrameRange<S> {
+    pub fn is_empty(&self) -> bool {
+        !(self.start < self.end)
+    }
+}
+
+impl<S: PageSize> Iterator for FrameRange<S> {
+    type Item = Frame<S>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.start < self.end {
+            let frame = self.start.clone();
+            self.start += 1;
+            Some(frame)
+        } else {
+            None
+        }
+    }
+}
+
+impl<S: PageSize> fmt::Debug for FrameRange<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("FrameRange")
+            .field("start", &self.start)
+            .field("end", &self.end)
+            .finish()
+    }
+}
+
 
 impl<S: PageSize> fmt::Debug for Frame<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

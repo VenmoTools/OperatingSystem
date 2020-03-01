@@ -1,7 +1,8 @@
 use core::fmt;
 
 use crate::elf::{
-    elf_type::*, flags::SectionHeaderFlags, ProgramHeaderIter,
+    elf_type::*,
+    flags::SectionHeaderFlags, ProgramHeaderIter,
     SectionHeader,
     SectionHeaderIter,
 };
@@ -51,7 +52,6 @@ pub trait GenElf: Sized {
     }
 
     fn shstr_section(&self) -> &[u8] {
-        use GenSectionHeader;
         let sh = &self.section_headers()[self.header().shstr_index() as usize];
         let seg_off = sh.offset().into() as usize;
         let seg_filesz = sh.size().into() as usize;

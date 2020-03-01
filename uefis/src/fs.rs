@@ -1,14 +1,12 @@
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::borrow::Borrow;
-use core::convert::TryInto;
 use core::ptr;
 use uefi::{Completion, ResultExt, Status};
-use uefi::proto::media::file::{FileAttribute, FileType, RegularFile};
-use uefi::proto::media::file::{Directory, File as efiFile, FileInfo, FileMode};
-use uefi::proto::media::fs::SimpleFileSystem;
+use uefi::proto::media::{
+    file::{Directory, File as efiFile, FileAttribute, FileInfo, FileMode, FileType, RegularFile},
+    fs::SimpleFileSystem,
+};
 use uefi::table::boot::BootServices;
-use uefi::table::boot::MemoryType;
 
 use crate::result::{err, Error, ErrorKind, ok, Result, UefiResult};
 

@@ -33,3 +33,8 @@ raw-cpuid="2.0.2"
 [dependencies.system]
 path="system/"
 version="0.3.0"
+
+[features]
+default=["efi"]
+efi=[]
+bios=[]

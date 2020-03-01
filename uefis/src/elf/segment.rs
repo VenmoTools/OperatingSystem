@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::elf::{Elf32, Elf64, Error, GenElf, GenElfHeader, ProgramType};
+use crate::elf::{Elf32, Elf64, Error, GenElf, GenElfHeader};
 use crate::elf::elf_type::{ElfKind, MAGIC_BITES};
 use crate::elf::traits::{GenProgramHeader, GenSectionHeader};
 

@@ -1,7 +1,6 @@
 use alloc::string::{String, ToString};
-use core::convert::TryInto;
 use core::fmt;
-use core::fmt::Formatter;
+use system::ia_32e::paging::result::UnmapError;
 use uefi::{Completion, Status};
 
 const ERROR_BIT: usize = 1 << (core::mem::size_of::<usize>() * 8 - 1);
@@ -46,6 +45,14 @@ pub enum ErrorKind {
     Interrupted,
     /// 未写入任何数据
     WriteZero,
+    /// 页表索引不匹配
+    PageTableIndexNotMatch,
+    /// 页表项不匹配
+    FrameNotMatch,
+    // 当前页面未做映射
+    PageNotMapped,
+    ParentEntryHugePage,
+    InvalidFrameAddress,
 }
 
 impl ErrorKind {
@@ -57,7 +64,23 @@ impl ErrorKind {
             ErrorKind::UefiErrorCode => "uefi error status code",
             ErrorKind::InvalidFile => "specif file is invalid",
             ErrorKind::Interrupted => "interrupted",
-            ErrorKind::WriteZero => "no data written"
+            ErrorKind::WriteZero => "no data written",
+            ErrorKind::PageTableIndexNotMatch => "page table index not match",
+            ErrorKind::FrameNotMatch => "page table entry not match",
+            ErrorKind::PageNotMapped => "the page is not mapped",
+            ErrorKind::ParentEntryHugePage => "parent entry is not reference next page",
+            ErrorKind::InvalidFrameAddress => "invalid frame address",
+        }
+    }
+}
+
+
+impl From<UnmapError> for Error {
+    fn from(e: UnmapError) -> Self {
+        match e {
+            UnmapError::PageNotMapped => Error::new(ErrorKind::PageNotMapped, "the current page not mapped"),
+            UnmapError::ParentEntryHugePage => Error::new(ErrorKind::PageNotMapped, "the current page not mapped"),
+            UnmapError::InvalidFrameAddress(frame) => Error::with_string(ErrorKind::PageNotMapped, format!("got invalid frame address: {:?}", frame)),
         }
     }
 }

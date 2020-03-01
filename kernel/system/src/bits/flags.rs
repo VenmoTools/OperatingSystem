@@ -15,7 +15,7 @@ bitflags! {
 }
 
 bitflags! {
-    /// PTE flag
+    /// Page Entry flag
     #[allow(non_upper_case_globals)]
     pub struct PageTableFlags: u64 {
         /// 页存在标志位，如果置1表示存在否则表示不存在

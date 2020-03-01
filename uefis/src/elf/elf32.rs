@@ -1,6 +1,6 @@
 use core::fmt;
+use core::result::Result;
 
-use crate::*;
 use crate::elf::{ABIVersion, ElfHeaderFlags, ElfVersion, GenElf, GenElfHeader, GenProgramHeader, GenSectionHeader, ProgramFlags};
 use crate::elf::elf_type::{ABI, ElfEndian, ElfKind, ElfMachine, ElfType, ProgramType, SectionType};
 use crate::elf::flags::SectionHeaderFlags;

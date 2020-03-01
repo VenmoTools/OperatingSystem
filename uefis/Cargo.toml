@@ -7,6 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 
+
 [dependencies.uefi]
 version="0.4.0"
 features = ['exts']
@@ -18,10 +19,12 @@ features = ["qemu"]
 [dependencies.log]
 version = "0.4.8"
 
-[dependencies.osloader]
-path="osloader"
-version="0.1.0"
-features=["no-std"]
+[dependencies.bitflags]
+version = "1.0.4"
+
+[dependencies.system]
+path="../kernel/system"
+version="0.3.0"
 
 [features]
 default=["efi"]

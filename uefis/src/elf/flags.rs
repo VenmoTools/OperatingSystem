@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 
 bitflags! {
     pub struct SectionHeaderFlags: u64 {

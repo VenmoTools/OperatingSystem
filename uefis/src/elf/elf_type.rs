@@ -1,6 +1,3 @@
-use core::fmt;
-
-use crate::elf::GenElf;
 
 // 魔数
 pub const MAGIC_BITES: [u8; 4] = [0x7F, 0x45, 0x4C, 0x46];
@@ -60,6 +57,7 @@ pub enum ABIVersion {
 /// 段类型
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(u32)]
+#[allow(non_camel_case_types)]
 pub enum SectionType {
     /// 将节头标识为无效。此节头没有关联的节。节头的其他成员具有未定义的值
     SHT_NULL,
@@ -144,6 +142,7 @@ impl From<u32> for ElfHeaderFlags {
 /// SPARC标志
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(u32)]
+#[allow(non_camel_case_types)]
 pub enum ElfHeaderFlags {
     X86,
     /// 供应商扩展掩码
@@ -314,13 +313,13 @@ pub enum ElfVersion {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ProgramFlags {
     /* Segment is executable = (1 << 0)*/
-    PF_X,
+    PF_Execute,
     /* Segment is writable = (1 << 1)*/
-    PF_W,
+    PF_Write,
     /* Segment is readable = (1 << 2) */
-    PF_R,
+    PF_Read,
     /* Segment is readable = (1 << 2) | (1 << 1)* */
-    PF_RW,
+    PF_ReadWrite,
     /* OS-specific = 0x0ff00000*/
     PF_MASKOS,
     /* Processor-specific = 0xf0000000*/
@@ -331,10 +330,10 @@ pub enum ProgramFlags {
 impl From<u32> for ProgramFlags {
     fn from(n: u32) -> Self {
         match n {
-            0b00 => ProgramFlags::PF_X,
-            0b10 => ProgramFlags::PF_W,
-            0b100 => ProgramFlags::PF_R,
-            0b110 => ProgramFlags::PF_RW,
+            0b00 => ProgramFlags::PF_Execute,
+            0b10 => ProgramFlags::PF_Write,
+            0b100 => ProgramFlags::PF_Read,
+            0b110 => ProgramFlags::PF_ReadWrite,
             0x0ff00000 => ProgramFlags::PF_MASKOS,
             0xf0000000 => ProgramFlags::PF_MASKPROC,
             n => ProgramFlags::Unknown(n)

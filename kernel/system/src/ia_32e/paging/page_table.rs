@@ -2,12 +2,12 @@ use core::fmt;
 use core::ops::{Index, IndexMut};
 
 use crate::bits::PageTableFlags;
+use crate::ia_32e::paging::frame::Frame;
+use crate::ia_32e::paging::page::{Page4KB, PageSize};
+use crate::ia_32e::paging::result::FrameError;
 use crate::ia_32e::PhysAddr;
 
 use super::PageIndex;
-use crate::ia_32e::paging::frame::Frame;
-use crate::ia_32e::paging::result::FrameError;
-use crate::ia_32e::paging::page::{Page4KB, PageSize};
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]
@@ -16,27 +16,27 @@ pub struct PageTableEntry {
 }
 
 impl PageTableEntry {
-    /// 创建一个空的页表实体
+    /// 创建一个空的页表页表项
     pub const fn new() -> Self {
         PageTableEntry { entry: 0 }
     }
-    /// 判断页表实体是否被使用
+    /// 判断页表页表项是否被使用
     pub const fn is_unused(&self) -> bool {
         self.entry == 0
     }
-    /// 将页表实体设置位未使用
+    /// 将页表页表项设置位未使用
     pub fn set_unused(&mut self) {
         self.entry = 0;
     }
-    /// 获取当前实体的bitmap
+    /// 获取当前页表项的bitmap
     pub const fn flags(&self) -> PageTableFlags {
         PageTableFlags::from_bits_truncate(self.entry)
     }
-    /// 获取当前实体所映射的物理地址
+    /// 获取当前页表项所映射的物理地址
     pub fn addr(&self) -> PhysAddr {
         PhysAddr::new(self.entry & 0x000FFFFF_FFFFF000)
     }
-    /// 返回当前Entry的物理帧
+    /// 返回当前Entry的页帧
     /// # Error
     /// * `FrameError::FrameNotPresent` 表示当前Entry没有被置`PRESENT`位
     pub fn frame(&self) -> Result<Frame, FrameError> {
@@ -55,7 +55,7 @@ impl PageTableEntry {
         self.entry = phy.as_u64() | flags.bits();
     }
 
-    /// 将entry与指定的物理帧做映射
+    /// 将entry与指定的页帧做映射
     pub fn set_frame(&mut self, f: Frame, flags: PageTableFlags) {
         assert!(!flags.contains(PageTableFlags::HUGE_PAGE));
         self.set_addr(f.start_address(), flags)

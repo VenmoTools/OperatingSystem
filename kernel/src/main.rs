@@ -13,13 +13,10 @@ extern crate kernel;
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::panic::PanicInfo;
-
-use uefi::prelude::SystemTable;
-use uefi::table::boot::MemoryMapIter;
-use uefi::table::Runtime;
-
 #[allow(unused_imports)]
 use kernel::{devices, Initializer, loop_hlt};
+use uefi::prelude::SystemTable;
+use uefi::table::Runtime;
 
 struct Allocate;
 
@@ -41,16 +38,20 @@ fn handler(_layout: Layout) -> ! {
     loop_hlt()
 }
 
-
+#[cfg(feature = "efi")]
 #[no_mangle]
-pub extern "C" fn _start(_st: SystemTable<Runtime>, _it: MemoryMapIter) -> ! {
+pub extern "C" fn _start(_st: SystemTable<Runtime>) -> ! {
     println!("Hello World");
     let cpuid = raw_cpuid::CpuId::new();
     println!("cpu info:{:?}", cpuid.get_vendor_info().unwrap().as_string());
 //    Initializer::initialize_all();
-//    use x86_64::registers::control::Cr3;
-//    let (addr, _) = Cr3::read();
-//    println!("{:?}", addr);
+    loop_hlt()
+}
+
+#[cfg(feature = "bios")]
+#[no_mangle]
+pub extern "C" fn _start() -> ! {
+    Initializer::initialize_all();
     loop_hlt()
 }
 

@@ -1,7 +1,7 @@
-use crate::ia_32e::PhysAddr;
-use crate::ia_32e::paging::page::{PageSize, Page4KB, Page2MB, Page1GB};
 use crate::ia_32e::paging::allocator::UnusedFrame;
 use crate::ia_32e::paging::frame::Frame;
+use crate::ia_32e::paging::page::{Page1GB, Page2MB, Page4KB, PageSize};
+use crate::ia_32e::PhysAddr;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -72,7 +72,7 @@ pub enum UnmapError {
     InvalidFrameAddress(PhysAddr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum FrameError {
     /// 帧过大
     HugeFrame,
