@@ -251,7 +251,7 @@ impl<'a> Mapper<Page2MB> for RecursivePageTable<'a> {
 
         // 获取3级页表 获取并检查3级页表项
         let p3 = unsafe { &*p3_ptr(page, self.index) };
-        let mut p3_entry = &p3[page.p3_index()];
+        let p3_entry = &p3[page.p3_index()];
         p3_entry.frame().map_err(|e| match e {
             FrameError::FrameNotPresent => UnmapError::PageNotMapped,
             FrameError::HugeFrame => UnmapError::ParentEntryHugePage,
@@ -315,7 +315,7 @@ impl<'a> Mapper<Page2MB> for RecursivePageTable<'a> {
         if entry.is_unused() {
             return Err(TranslateError::PageNotMapped);
         }
-        Frame::from_start_addr(entry.addr()).map_err(|e| {
+        Frame::from_start_addr(entry.addr()).map_err(|_| {
             TranslateError::InvalidFrameAddress(entry.addr())
         })
     }

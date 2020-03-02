@@ -26,6 +26,12 @@ version = "1.0.4"
 path="../kernel/system"
 version="0.3.0"
 
+[dependencies.raw-cpuid]
+version = "7.0.3"
+
+[dependencies.xmas-elf]
+version = "0.6.2"
+
 [features]
 default=["efi"]
 efi=[]

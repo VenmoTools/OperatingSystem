@@ -43,6 +43,10 @@ impl Efer {
         EferFlags::from_bits_truncate(Self::read_raw())
     }
 
+    pub fn enable_long_mode() -> bool {
+        Self::read().contains(EferFlags::LONG_MODE_ENABLE)
+    }
+
     pub fn read_raw() -> u64 {
         unsafe {
             Self::MSR.read()

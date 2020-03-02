@@ -4,11 +4,13 @@
 
 extern crate alloc;
 
+#[cfg(feature = "efi")]
 pub mod serial;
+#[cfg(feature = "efi")]
 pub mod descriptor;
 pub mod process;
+#[cfg(feature = "efi")]
 pub mod devices;
-
 
 pub struct Initializer;
 

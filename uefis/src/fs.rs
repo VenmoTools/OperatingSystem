@@ -172,7 +172,7 @@ impl File {
     /// new函数和try_new函数的辅助操作
     fn _new(bt: &BootServices) -> UefiResult<Self> {
         let f = unsafe { &mut *bt.locate_protocol::<SimpleFileSystem>().log_warning()?.get() };
-        let mut volume = f.open_volume().log_warning()?;
+        let volume = f.open_volume().log_warning()?;
         Ok(Completion::from(File {
             root: volume,
             buffer: vec![0_u8; DEFAULT_BUFFER_SIZE],

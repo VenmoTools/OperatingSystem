@@ -2,7 +2,7 @@
 Operating System Notes
 # 博客地址
 [使用Rust开发操作系统](https://blog.csdn.net/qq_41698827)
-#编写环境
+# 编写环境
 ## 系统
 Linux version 5.0.0-27-generic (buildd@lgw01-amd64-031) (gcc version 7.4.0 (Ubuntu 7.4.0-1ubuntu118.04.1)) #2818.04.1-Ubuntu
 # 编译环境

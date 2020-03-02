@@ -1,11 +1,7 @@
 #![no_std]
 #![no_main]
-#![feature(custom_test_frameworks)]
 #![feature(abi_efiapi)]
 #![feature(alloc_error_handler)]
-#![test_runner(kernel::test_runner)]
-#![reexport_test_harness_main = "test_main"]
-#![cfg_attr(feature = "deny-warnings", deny(missing_docs))]
 
 
 #[macro_use]
@@ -13,10 +9,13 @@ extern crate kernel;
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::panic::PanicInfo;
-#[allow(unused_imports)]
+#[cfg(feature = "efi")]
 use kernel::{devices, Initializer, loop_hlt};
 use uefi::prelude::SystemTable;
+use uefi::Status;
+use uefi::table::boot::MemoryMapIter;
 use uefi::table::Runtime;
+use uefi::table::runtime::ResetType;
 
 struct Allocate;
 
@@ -40,17 +39,17 @@ fn handler(_layout: Layout) -> ! {
 
 #[cfg(feature = "efi")]
 #[no_mangle]
-pub extern "C" fn _start(_st: SystemTable<Runtime>) -> ! {
-    println!("Hello World");
-    let cpuid = raw_cpuid::CpuId::new();
-    println!("cpu info:{:?}", cpuid.get_vendor_info().unwrap().as_string());
-//    Initializer::initialize_all();
+pub extern "C" fn _start(st: SystemTable<Runtime>, _iter: MemoryMapIter) -> ! {
+    st.config_table();
     loop_hlt()
 }
 
 #[cfg(feature = "bios")]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    println!("Hello World");
+    let cpuid = raw_cpuid::CpuId::new();
+    println!("cpu info:{:?}", cpuid.get_vendor_info().unwrap().as_string());
     Initializer::initialize_all();
     loop_hlt()
 }

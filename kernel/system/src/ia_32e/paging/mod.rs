@@ -24,7 +24,7 @@ pub struct PagingArgs {
 }
 
 /// 2MB Paging
-pub unsafe fn enable_paging_for_uefi(args: PagingArgs) {
+pub unsafe fn enable_4_level_paging(args: PagingArgs) {
     use core::ptr::{write_bytes, write};
     use crate::ia_32e::cpu::control::{CR3, CR0, CR4};
     use crate::bits::{CR4Flags, CR0Flags, EferFlags, PageTableFlags};

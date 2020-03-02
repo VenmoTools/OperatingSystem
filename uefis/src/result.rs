@@ -87,6 +87,7 @@ impl From<UnmapError> for Error {
 
 
 impl Efi {
+    #[allow(unreachable_patterns)]
     pub fn as_str(&self) -> &'static str {
         match self.status.0 {
             0 => "The operation completed successfully.",
@@ -174,7 +175,7 @@ impl Error {
     /// 提供错误类型的判断
     pub fn kind(&self) -> ErrorKind {
         match self.repr {
-            Repr::Uefi(ref efi) => ErrorKind::UefiErrorCode,
+            Repr::Uefi(_) => ErrorKind::UefiErrorCode,
             Repr::Custom(ref cu) => cu.kind,
         }
     }

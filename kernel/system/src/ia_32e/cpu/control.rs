@@ -15,6 +15,14 @@ impl CR0 {
         }
     }
 
+    pub fn is_enable_protected_mode() -> bool {
+        Self::read().contains(CR0Flags::PROTECTED_MODE_ENABLE)
+    }
+
+    pub fn is_enable_paging() -> bool {
+        Self::read().contains(CR0Flags::PAGING)
+    }
+
     pub fn read_raw() -> u64 {
         unsafe {
             read_cr0()
@@ -70,6 +78,11 @@ impl CR4 {
     /// 读取当前CR4寄存器的Flag
     pub fn read() -> CR4Flags {
         CR4Flags::from_bits_truncate(Self::read_raw())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn is_enable_PAE() -> bool {
+        Self::read().contains(CR4Flags::PHYSICAL_ADDRESS_EXTENSION)
     }
 
     /// 读取当前寄存器的值
