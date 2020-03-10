@@ -1,9 +1,10 @@
 // 初始化UART，并通过串行端口发送数据
 // 这样可以直接与本地控制台传送数据
 
-use lazy_static::lazy_static;
 use spin::Mutex;
 use uart_16550::SerialPort;
+
+use lazy_static::lazy_static;
 
 // 使用懒加载进行静态初始化
 lazy_static! {

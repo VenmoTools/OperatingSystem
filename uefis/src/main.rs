@@ -6,7 +6,6 @@
 #![feature(never_type)]
 #![feature(fn_traits)]
 #![allow(dead_code)]
-#![allow(unused_must_use)]
 #![feature(slice_from_raw_parts)]
 
 #[macro_use]
@@ -31,79 +30,68 @@ use crate::fs::Read;
 mod result;
 mod fs;
 mod paging;
-// mod elf;
-// mod loader;
 
-pub fn check_cpu() {
-    let cpuid = raw_cpuid::CpuId::new();
-    let c_info = cpuid.get_vendor_info().unwrap();
-    info!("CPU Vendor is: {}", c_info.as_string());
-    let infos = cpuid.get_extended_function_info().unwrap();
-    info!("Cpu Type is {}", infos.processor_brand_string().unwrap());
-    if infos.has_1gib_pages() {
-        info!("CPU support 1GB pages")
-    }
-    if infos.has_64bit_mode() {
-        info!("already in long mode");
-    }
-    info!("physical address bits {}", infos.physical_address_bits().unwrap());
-}
 
-pub fn paging_check() {
-    if CR0::is_enable_protected_mode() {
-        info!("system in protected mode");
-    }
-    if CR0::is_enable_paging() {
-        info!("system enable paging");
-        if CR4::is_enable_PAE() && Efer::enable_long_mode() {
-            info!("system now in 4-level paging");
-        } else if CR4::is_enable_PAE() {
-            info!("system now in 32-bit paging");
-        } else if CR4::is_enable_PAE() && !Efer::enable_long_mode() {
-            info!("system now in PAE paging");
-        }
-        let (frame, _) = CR3::read();
-        info!("base table physical start address:{:?}", frame);
-    }
-}
+type KernelEnterPoint = fn(KernelArgs) -> !;
 
 
 #[entry]
 fn efi_main(image: Handle, st: SystemTable<Boot>) -> Status {
-    if let Err(e) = uefi_services::init(&st).log_warning() {
-        info!("{:?}", e);
-        return e.status();
-    }
-    check_cpu();
-    paging_check();
-
+    // UEFI服务初始化
+    init(&st);
     let bt = st.boot_services();
-    // 2. 加载内核文件
-    let mut f = fs::File::new(bt);
-    let mut reader = f.open(r"EFI\Boot\kernel", "r").log_warning().unwrap().unwrap();
-    let mut buf = Vec::new();
-    reader.read_to_end(&mut buf);
-
-    let elf = ElfFile::new(buf.as_slice()).unwrap();
-    let entry = load_elf(bt, &elf);
-    info!("entry address {:#X}", entry as u64);
-    let outpu = bt.locate_protocol::<GraphicsOutput>().log_warning().unwrap();
-    let display = unsafe { &mut *outpu.get() };
-
-    switch_context(image, st, entry)
+    // 显示器分辨率设置
+    let output = bt.locate_protocol::<GraphicsOutput>().log_warning().unwrap();
+    let gop = unsafe { &mut *output.get() };
+    switch_display_mode(gop, (1024,768));
+    // CPU检测
+    check_cpu();
+    // 分页检测
+    paging_check();
+    // 加载内核
+    let entry = load_kernel(bt);
+    // 跳转内核
+    switch_context(image, gop, st, entry)
 }
 
-
-fn switch_context(image: uefi::Handle, st: SystemTable<Boot>, f: fn(SystemTable<Runtime>, MemoryMapIter) -> !) -> ! {
-    let mmap_size = st.boot_services().memory_map_size();
-    let mut mmp = vec![0; mmap_size].into_boxed_slice();
-    info!("exit boot services...");
-    if let Err(e) = st.stdout().reset(false).log_warning() {
+fn reset_console(st: &SystemTable<Boot>) {
+    if let Err(e) = st.stdout().clear().log_warning() {
         info!("{:?}", e);
         loop {}
     }
-    let (st, iter) = st.exit_boot_services(image, &mut mmp).log_warning().unwrap();
-    f(st, iter)
+}
+
+#[repr(C)]
+pub struct KernelArgs {
+    st: SystemTable<Runtime>,
+    // iter: MemoryMapIter<'a>,
+    frame_ptr: *mut u8,
+    frame_size: usize,
+}
+
+impl KernelArgs {
+    pub fn as_ptr(&self) -> *const KernelArgs {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+
+fn switch_context(image: uefi::Handle, gop: &mut GraphicsOutput, st: SystemTable<Boot>, f: KernelEnterPoint) -> ! {
+    let mmap_size = st.boot_services().memory_map_size();
+    let ptr = st.boot_services().allocate_pool(MemoryType::RUNTIME_SERVICES_DATA, mmap_size).log_warning().unwrap();
+    let mmp = unsafe { core::slice::from_raw_parts_mut(ptr, mmap_size) };
+    let mut frame = gop.frame_buffer();
+    info!("{:#X}",frame.as_mut_ptr() as u64);
+    info!("{}",frame.size());
+    info!("exit boot services...");
+    reset_console(&st);
+    let (st, _iter) = st.exit_boot_services(image, mmp).log_warning().unwrap();
+    let args = KernelArgs {
+        st,
+        // iter,
+        frame_ptr: frame.as_mut_ptr(),
+        frame_size: frame.size(),
+    };
+    f(args)
 }
 
 fn map_memory_layout<F: FnMut(&MemoryMapKey, &mut MemoryMapIter)>(bt: &BootServices, mut f: F) -> UefiResult<Result<()>> {
@@ -115,7 +103,7 @@ fn map_memory_layout<F: FnMut(&MemoryMapKey, &mut MemoryMapIter)>(bt: &BootServi
     ok(())
 }
 
-pub fn load_elf(bt: &BootServices, elf: &ElfFile) -> fn(SystemTable<Runtime>, MemoryMapIter) -> ! {
+pub fn load_elf<'a>(bt: &BootServices, elf: &ElfFile) -> KernelEnterPoint {
     for header in elf.program_iter() {
         match header {
             ProgramHeader::Ph64(h) => { load(bt, elf, h) }
@@ -136,7 +124,7 @@ fn load(bt: &BootServices, elf: &ElfFile, header: &ProgramHeader64) {
         };
         assert_eq!(dest as u64, header.virtual_addr & !0x0fff);
 
-        bt.allocate_pages(AllocateType::Address(dest), MemoryType::LOADER_CODE, page_num);
+        bt.allocate_pages(AllocateType::Address(dest), MemoryType::LOADER_CODE, page_num).log_warning().unwrap();
 
         unsafe { bt.memset(dest as *mut u8, page_num * 4096, 0) };
         let buf = unsafe { core::slice::from_raw_parts_mut(header.virtual_addr as *mut u8, header.mem_size as usize) };
@@ -146,4 +134,64 @@ fn load(bt: &BootServices, elf: &ElfFile, header: &ProgramHeader64) {
             buf.copy_from_slice(data);
         }
     }
+}
+
+fn check_cpu() {
+    let cpuid = raw_cpuid::CpuId::new();
+    let c_info = cpuid.get_vendor_info().unwrap();
+    info!("CPU Vendor is: {}", c_info.as_string());
+    let infos = cpuid.get_extended_function_info().unwrap();
+    info!("Cpu Type is {}", infos.processor_brand_string().unwrap());
+    if infos.has_1gib_pages() {
+        info!("CPU support 1GB pages")
+    }
+    if infos.has_64bit_mode() {
+        info!("already in long mode");
+    }
+    info!("physical address bits {}", infos.physical_address_bits().unwrap());
+}
+
+fn paging_check() {
+    if CR0::is_enable_protected_mode() {
+        info!("system in protected mode");
+    }
+    if CR0::is_enable_paging() {
+        info!("system enable paging");
+        if CR4::is_enable_PAE() && Efer::enable_long_mode() {
+            info!("system now in 4-level paging");
+        } else if CR4::is_enable_PAE() && !Efer::enable_long_mode() {
+            info!("system now in 32-bit paging");
+        } else if CR4::is_enable_PAE() {
+            info!("system now in PAE paging");
+        } else {
+            info!("not paging");
+        }
+        let (frame, _) = CR3::read();
+        info!("base table physical start address:{:?}", frame);
+    }
+}
+
+fn init(st: &SystemTable<Boot>) {
+    if let Err(e) = uefi_services::init(&st).log_warning() {
+        info!("{:?}", e);
+    }
+}
+
+fn switch_display_mode(gop: &mut GraphicsOutput, display_mode: (usize, usize)) {
+    let mode = gop.modes()
+        .map(|m| m.unwrap())
+        .find(|ref m| {
+            let info = m.info();
+            info.resolution() == display_mode
+        }).unwrap();
+    gop.set_mode(&mode).log_warning().unwrap();
+}
+
+fn load_kernel(bt: &BootServices) -> KernelEnterPoint {
+    let mut f = fs::File::new(bt);
+    let mut reader = f.open(r"EFI\Boot\kernel", "r").log_warning().unwrap().unwrap();
+    let mut buf = Vec::new();
+    reader.read_to_end(&mut buf).unwrap();
+    let elf = ElfFile::new(buf.as_slice()).unwrap();
+    load_elf(bt, &elf)
 }

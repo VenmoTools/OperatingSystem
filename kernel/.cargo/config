@@ -1,6 +1,6 @@
 # build settings
 [build]
-target = "x86-64.json"
+target = "x86_64-unknown-none.json"
 
 [source.crates-io]
 registry = "https://github.com/rust-lang/crates.io-index"

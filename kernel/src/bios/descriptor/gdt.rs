@@ -1,6 +1,7 @@
-use lazy_static::lazy_static;
 use system::ia_32e::descriptor::{Descriptor, GlobalDescriptorTable, SegmentSelector, TaskStateSegment};
 use system::ia_32e::VirtAddr;
+
+use lazy_static::lazy_static;
 
 pub const DOUBLE_FAULT_LIST_INDEX: u16 = 0;
 
