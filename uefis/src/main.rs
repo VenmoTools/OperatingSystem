@@ -185,6 +185,7 @@ fn switch_display_mode(gop: &mut GraphicsOutput, display_mode: (usize, usize)) {
             info.resolution() == display_mode
         }).unwrap();
     gop.set_mode(&mode).log_warning().unwrap();
+    info!("{:?}",gop.current_mode_info());
 }
 
 fn load_kernel(bt: &BootServices) -> KernelEnterPoint {

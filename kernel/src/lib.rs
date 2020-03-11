@@ -6,9 +6,11 @@
 #![deny(warnings)]
 extern crate alloc;
 
-
 use core::alloc::{GlobalAlloc, Layout};
 use core::panic::PanicInfo;
+
+use uefi::prelude::SystemTable;
+use uefi::table::Runtime;
 
 #[cfg(feature = "bios")]
 pub mod bios;
@@ -17,6 +19,15 @@ pub mod bios;
 pub mod graphic;
 
 pub mod process;
+
+#[repr(C)]
+pub struct KernelArgs {
+    pub st: SystemTable<Runtime>,
+    // iter: MemoryMapIter<'a>,
+    pub frame_ptr: *mut u8,
+    pub frame_size: usize,
+}
+
 
 pub struct Allocator;
 

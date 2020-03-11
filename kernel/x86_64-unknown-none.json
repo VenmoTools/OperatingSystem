@@ -5,11 +5,13 @@
   "target-endian": "little",
   "target-pointer-width": "64",
   "target-c-int-width": "32",
+  "vendor": "unknown",
   "os": "none",
   "executables": true,
   "linker-flavor": "ld.lld",
   "linker": "rust-lld",
+  "code-model": "kernel",
   "panic-strategy": "abort",
   "disable-redzone": true,
-  "features": "-mmx,-sse,+soft-float"
+  "features": "-mmx,-sse,-sse2,-sse3,-ssse3,-sse4.1,-sse4.2,-3dnow,-3dnowa,-avx,-avx2,+soft-float"
 }
