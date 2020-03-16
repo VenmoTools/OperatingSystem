@@ -85,14 +85,16 @@ pub fn read_rip() -> u64 {
 
 /// 从msr寄存器中读取64位数据
 #[inline]
-pub unsafe fn rdmsr(msr: u32) -> u64 {
+pub fn rdmsr(msr: u32) -> u64 {
     let (mut high, mut low) = (0_u32, 0_32);
-    asm!("rdmsr"
+    unsafe{
+        asm!("rdmsr"
         : "={eax}"(low),"={edx}"(high)
         : "{ecx}"(msr)
         : "memory"
         : "volatile"
         );
+    }
     ((high as u64) << 32) | (low as u64)
 }
 
@@ -104,6 +106,16 @@ pub unsafe fn wrmsr(msr: u32, data: u64) {
     asm!("wrmsr"
         :
         : "{ecx}"(msr),"{eax}"(low),"{edx}"(high)
+        : "memory"
+        : "volatile"
+        )
+}
+
+#[inline]
+pub unsafe fn wrmsr2(msr: u32, data1: u32,data2:u32) {
+    asm!("wrmsr"
+        :
+        : "{ecx}"(msr),"{eax}"(data1),"{edx}"(data2)
         : "memory"
         : "volatile"
         )

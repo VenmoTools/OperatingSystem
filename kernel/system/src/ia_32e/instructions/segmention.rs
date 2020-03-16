@@ -80,6 +80,10 @@ pub unsafe fn swap_gs(){
     );
 }
 
+pub unsafe fn load_gdt(){
+
+}
+
 /// 获取当前的代码段选择子
 /// 获取失败的时候会返回0
 pub fn cs() -> SegmentSelector{

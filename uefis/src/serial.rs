@@ -17,22 +17,22 @@ lazy_static! {
 #[doc(hidden)]
 pub fn _print(arg: ::core::fmt::Arguments) {
     use core::fmt::Write;
-    use x86_64::instructions::interrupts;
-    interrupts::without_interrupts(|| {
+    use system::ia_32e::instructions::interrupt::without_interrupts;
+    without_interrupts(|| {
         SERIAL.lock().write_fmt(arg).expect("Printing to Serial failed!");
     });
 }
 
 #[macro_export]
-macro_rules! serial_print {
+macro_rules! print {
     ($($arg:tt)*) => {
         $crate::serial::_print(format_args!($($arg)*));
     };
 }
 
 #[macro_export]
-macro_rules! serial_println {
-    ()=>($crate::serial_print!("\n"));
-    ($fmt:expr) => ($crate::serial_print!(concat!($fmt,"\n")));
-    ($fmt:expr, $($args:tt)*) => ($crate::serial_print!(concat!($fmt,"\n"),$($args)*));
+macro_rules! println {
+    ()=>($crate::print!("\n"));
+    ($fmt:expr) => ($crate::print!(concat!($fmt,"\n")));
+    ($fmt:expr, $($args:tt)*) => ($crate::print!(concat!($fmt,"\n"),$($args)*));
 }

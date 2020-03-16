@@ -28,7 +28,7 @@ pub unsafe fn enable_4_level_paging(args: PagingArgs) {
     use core::ptr::{write_bytes, write};
     use crate::ia_32e::cpu::control::{CR3, CR0, CR4};
     use crate::bits::{CR4Flags, CR0Flags, EferFlags, PageTableFlags};
-    use crate::ia_32e::cpu::msr;
+    use crate::ia_32e::cpu::apic;
 
     let pml4t = args.pml4t_base_addr;
     // 创建6个4096大小的PML4TE
@@ -86,9 +86,9 @@ pub unsafe fn enable_4_level_paging(args: PagingArgs) {
 
 
     // Enable Long mode and NX bit
-    let mut msr_flag = msr::Efer::read();
+    let mut msr_flag = apic::Efer::read();
     msr_flag |= EferFlags::NO_EXECUTE_ENABLE | EferFlags::LONG_MODE_ENABLE;
-    msr::Efer::write(msr_flag);
+    apic::Efer::write(msr_flag);
 
     // 重新设置新的内存布局
     let cr3_flags = CR3::read().1;

@@ -58,5 +58,4 @@ pub struct Process {
     /// 0x0000_0000_0000_0000 - 0x0000_7FFF_FFFF_FFFF 应用层
     /// 0xFFFF_8000_0000_0000 - 0xFFFF_FFFF_FFFF_FFFF 内核层
     address_limit: i64,
-
 }

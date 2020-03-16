@@ -3,30 +3,30 @@
 #![feature(abi_efiapi)]
 #![feature(alloc_error_handler)]
 #![feature(abi_x86_interrupt)]
-#![deny(warnings)]
+// #![deny(warnings)]
+
+#[macro_use]
 extern crate alloc;
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::panic::PanicInfo;
 
-use uefi::prelude::SystemTable;
-use uefi::table::Runtime;
+use system::KernelArgs;
+use uefi::table::boot::MemoryMapIter;
 
 #[cfg(feature = "bios")]
 pub mod bios;
+#[cfg(feature = "efi")]
+pub mod efi;
 
 #[cfg(feature = "efi")]
 pub mod graphic;
-
+pub mod apic;
 pub mod process;
-
-#[repr(C)]
-pub struct KernelArgs {
-    pub st: SystemTable<Runtime>,
-    // iter: MemoryMapIter<'a>,
-    pub frame_ptr: *mut u8,
-    pub frame_size: usize,
-}
+pub mod paging;
+#[macro_use]
+pub mod serial;
+pub mod memory;
 
 
 pub struct Allocator;
@@ -45,7 +45,8 @@ unsafe impl GlobalAlloc for Allocator {
 pub static mut ALLOCATOR: Allocator = Allocator;
 
 #[alloc_error_handler]
-fn handler(_layout: Layout) -> ! {
+fn handler(layout: Layout) -> ! {
+    println!("allocate memory Error: align={} ,size={}", layout.align(), layout.size());
     loop_hlt()
 }
 
@@ -57,7 +58,12 @@ pub fn init_heap() {
 }
 
 
-pub struct Initializer;
+pub struct Initializer<'a> {
+    #[cfg(feature = "efi")]
+    args: &'a KernelArgs,
+    #[cfg(feature = "efi")]
+    iter: &'a MemoryMapIter<'a>,
+}
 
 impl Initializer {
     #[cfg(feature = "bios")]
@@ -95,7 +101,8 @@ pub fn loop_hlt() -> ! {
 /// 用于运行过程中异常处理
 #[cfg(feature = "efi")]
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("{:?}", info);
     loop_hlt()
 }
 

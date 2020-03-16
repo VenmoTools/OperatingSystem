@@ -9,6 +9,7 @@ pub mod paging;
 pub mod cpu;
 pub mod apic;
 pub mod acpi;
+pub mod call_convention;
 
 /// 系统特权级
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

@@ -5,7 +5,22 @@ use system::ia_32e::paging::mapper::{Mapper, MapperFlush};
 use system::ia_32e::paging::result::{CreatePageTableError, FlagUpdateError, FrameError, MapToError, TranslateError, UnmapError};
 use system::ia_32e::VirtAddr;
 
-use crate::result::{Error, ErrorKind};
+use crate::alloc::string::String;
+
+#[derive(Debug)]
+pub struct Error {}
+
+impl Error {
+    pub fn with_string(_kind: ErrorKind, _s: String) -> Error {
+        Error {}
+    }
+}
+
+pub enum ErrorKind {
+    PageTableIndexNotMatch,
+    FrameNotMatch,
+}
+
 
 pub struct RecursivePageTable<'a> {
     pml4t: &'a mut PageTable,
@@ -15,7 +30,7 @@ pub struct RecursivePageTable<'a> {
 impl<'a> RecursivePageTable<'a> {
     /// 根据给定的页表创建递归页表
     /// 页表必须是有效，即CR3寄存器必须包含其物理地址。
-    pub fn new(table: &'a mut PageTable) -> crate::result::Result<Self> {
+    pub fn new(table: &'a mut PageTable) -> Result<Self, Error> {
         // 传递的页表必须具有一个递归条目，即指向表本身的条目。
         // 引用必须使用该“循环”，即形式为“ 0o_xxx_xxx_xxx_xxx_0000”，其中“ xxx”是递归条目
         let page = Page::include_address(VirtAddr::new(table as *const _ as u64));
@@ -42,12 +57,8 @@ impl<'a> RecursivePageTable<'a> {
         })
     }
 
-    /// create_next_table使用了unsafe辅助函数
-    pub unsafe fn create_next_table<'b, A>(
-        entry: &'b mut PageTableEntry, next_page: Page, allocator: &mut A)
-        -> Result<&'b mut PageTable, CreatePageTableError>
-        where A: FrameAllocator<Page4KB>
-    {
+    fn crate_helper<'help, A>(entry: &'help mut PageTableEntry, next_page: Page, allocator: &mut A) -> Result<&'help mut PageTable, CreatePageTableError>
+        where A: FrameAllocator<Page4KB> {
         let mut created = false;
         if entry.is_unused() {
             if let Some(frame) = allocator.alloc() {
@@ -55,17 +66,24 @@ impl<'a> RecursivePageTable<'a> {
                 created = true;
             }
         }
-
         if entry.flags().contains(PageTableFlags::HUGE_PAGE) {
             return Err(CreatePageTableError::MappedToHugePage);
         }
-
         let ptr = next_page.start_address().as_mut_ptr();
-        let pt: &mut PageTable = &mut *(ptr);
+        let pt: &mut PageTable = unsafe { &mut *(ptr) };
         if created {
             pt.zero();
         }
         Ok(pt)
+    }
+
+    /// create_next_table使用了crate_helper辅助函数,因为unsafe函数会把整个函数当做unsafe块
+    /// 在unsafe块中写大量代码是不安全的
+    pub unsafe fn create_next_table<'b, A>(
+        entry: &'b mut PageTableEntry, next_page: Page, allocator: &mut A,
+    ) -> Result<&'b mut PageTable, CreatePageTableError>
+        where A: FrameAllocator<Page4KB> {
+        Self::crate_helper(entry, next_page, allocator)
     }
 
 

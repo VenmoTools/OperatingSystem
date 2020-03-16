@@ -14,7 +14,7 @@ use crate::ia_32e::PrivilegedLevel;
 /// # Example
 ///
 /// ```
-/// use system::ia_32e::descriptor::gdt::GlobalDescriptorTable;
+/// use system::ia_32e::descriptor::GlobalDescriptorTable;
 /// use system::ia_32e::descriptor::Descriptor;
 ///
 /// #[no_mangle]
@@ -36,6 +36,19 @@ impl GlobalDescriptorTable {
     pub fn new() -> GlobalDescriptorTable {
         GlobalDescriptorTable {
             table: [0; 8],
+            next_free: 1,
+        }
+    }
+
+    /// 从给定DescriptorTablePointer指针返回GDT结构,GDT项默认为8个
+    pub unsafe fn from_ptr(ptr: DescriptorTablePointer) -> GlobalDescriptorTable {
+        let table = core::slice::from_raw_parts(ptr.base as *const u64, 8);
+        let mut t = [0_u64; 8];
+        for i in 0..t.len() {
+            t[i] = table[i].clone();
+        }
+        GlobalDescriptorTable {
+            table: t,
             next_free: 1,
         }
     }

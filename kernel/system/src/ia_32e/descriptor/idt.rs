@@ -14,6 +14,7 @@ use core::ops::{Deref, Index, IndexMut};
 use crate::bits::{BitOpt, PageFaultErrorCode};
 use crate::ia_32e::PrivilegedLevel;
 use crate::ia_32e::VirtAddr;
+use crate::ia_32e::descriptor::DescriptorTablePointer;
 
 /// 中断栈帧的值
 #[derive(Clone)]
@@ -323,7 +324,6 @@ impl InterruptDescriptorTable {
     #[cfg(target_arch = "x86_64")]
     pub fn load(&'static self) {
         use crate::ia_32e::instructions::tables::lidt;
-        use crate::ia_32e::descriptor::DescriptorTablePointer;
         use core::mem::size_of;
 
         let ptr = DescriptorTablePointer {

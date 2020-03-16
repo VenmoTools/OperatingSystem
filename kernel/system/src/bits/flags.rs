@@ -14,6 +14,67 @@ bitflags! {
     }
 }
 
+
+bitflags!{
+    pub struct ESRFlags: u32{
+        /// 发送校验和错误 LocalAPIC检测到发往APIC总线的中断消息出现校验和错误
+        const SEND_CHECKSUM_ERROR = 1<<0;
+        /// 接受校验和错误 LocalAPIC检测到来自APIC总线的中断消息出现校验和错误
+        const RECV_CHECKSUM_ERROR = 1 << 1;
+        /// 发送中断消息受理错误   LocalAPIC检测到发往APIC总线的中断消息未被其他APIC受理
+        const SEND_INTERRUPT_MSG_ACCPT_ERROR = 1 << 2;
+        /// 接受中断消息受理错误  LocalAPIC检测到来自APIC总线的中断消息未被其他APIC受理
+        const RECV_INTERRUPT_MSG_ACCPT_ERROR = 1 << 3;
+        /// IPI无法正确定向 在Local APIC不支持Lowest-Priority投递模式下使用Lowest-Priority投递发送IPI消息
+        const IPI_CANNOT_ORIENTED_CORRECTLY = 1 << 4;
+        /// 发送的中断向量号不合法 Local APIC通过ICR或SELF IPI寄存器发送的中断消息的中断向量号不合法
+        const SEND_INTERRUPT_VECOTR_INVALID = 1 << 5;
+        /// 接受的中断向量号不合法 Local APIC接受的中断消息的中断向量号不合法
+        const RECV_INTERRUPT_VECOTR_INVALID = 1 << 6;
+        /// 寄存器地址不合法 Local APIC处于xAPIC模式下，软件访问了Local APIC寄存器地址空间
+        const REGISTER_ADDRESS_INVALID = 1 << 7;
+    }
+}
+
+bitflags! {
+    #[allow(non_upper_case_globals)]
+    pub struct LVTEntryFlags: u32{
+        /// 投递模式标志位
+        const DELIVERY_MODE_1 = 1 << 8;
+        const DELIVERY_MODE_2 = 1 << 9;
+        const DELIVERY_MODE_3 = 1 << 10;
+        /// Fixed
+        const DELIVERY_FIXED = Self::DELIVERY_MODE_1.bits & Self::DELIVERY_MODE_2.bits & Self::DELIVERY_MODE_3.bits;
+        /// SMI
+        const DELIVERY_SMI = Self::DELIVERY_MODE_2.bits;
+        /// NMI
+        const DELIVERY_NMI = Self::DELIVERY_MODE_3.bits;
+        /// ExtINT
+        const DELIVERY_EXT_INT = Self::DELIVERY_MODE_1.bits | Self::DELIVERY_MODE_2.bits | Self::DELIVERY_MODE_3.bits;
+        /// INIT
+        const DELIVERY_INIT = Self::DELIVERY_MODE_1.bits | Self::DELIVERY_MODE_3.bits;
+        /// 投递状态 0空间 1发送挂起
+        const DELIVERY_STATUS = 1 << 12;
+        /// 电平触发极性
+        const INTERRUPT_INPUT_PIN_POLARITY = 1 << 13;
+        /// 远程IRR标志位
+        const REMOTE_IRR = 1 << 14;
+        /// 触发模式 0边沿触发，1电平触发
+        const TRIGGER_MODE = 1<<15;
+        /// 屏蔽标志位 1未屏蔽，0为已屏蔽
+        const MASK_FLAGS = 1 << 16;
+        /// 定时模式
+        const TIMER_MODE_1 = 1<<17;
+        const TIMER_MODE_2 = 1<<18;
+        /// 一次性定时
+        const TIMER_ONE_SHOT = Self::TIMER_MODE_1.bits & Self::TIMER_MODE_2.bits;
+        /// 周期性定时
+        const TIMER_PERIODIC = Self::TIMER_MODE_1.bits;
+        /// 定时
+        const TIMER_TSC_DEADLINE = Self::TIMER_MODE_2.bits;
+    }
+}
+
 bitflags! {
     /// Page Entry flag
     #[allow(non_upper_case_globals)]

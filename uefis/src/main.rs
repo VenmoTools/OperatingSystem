@@ -17,11 +17,11 @@ extern crate uefi;
 use alloc::vec::Vec;
 use result::{ok, Result, UefiResult};
 use system::ia_32e::cpu::control::{CR0, CR3, CR4};
-use system::ia_32e::cpu::msr::Efer;
+use system::ia_32e::cpu::apic::Efer;
+use system::KernelArgs;
 use uefi::prelude::*;
 use uefi::proto::console::gop::GraphicsOutput;
 use uefi::table::boot::{AllocateType, MemoryMapIter, MemoryMapKey, MemoryType};
-use uefi::table::Runtime;
 use xmas_elf::ElfFile;
 use xmas_elf::program::{ProgramHeader, ProgramHeader64, Type};
 
@@ -29,10 +29,14 @@ use crate::fs::Read;
 
 mod result;
 mod fs;
-mod paging;
+#[macro_use]
+mod serial;
+
+static mut KERNEL_START: u64 = 0;
+static mut KERNEL_END: u64 = 0;
 
 
-type KernelEnterPoint = fn(KernelArgs) -> !;
+type KernelEnterPoint = fn(u64) -> !;
 
 
 #[entry]
@@ -43,7 +47,7 @@ fn efi_main(image: Handle, st: SystemTable<Boot>) -> Status {
     // 显示器分辨率设置
     let output = bt.locate_protocol::<GraphicsOutput>().log_warning().unwrap();
     let gop = unsafe { &mut *output.get() };
-    switch_display_mode(gop, (1024,768));
+    switch_display_mode(gop, (1024, 768));
     // CPU检测
     check_cpu();
     // 分页检测
@@ -61,18 +65,16 @@ fn reset_console(st: &SystemTable<Boot>) {
     }
 }
 
-#[repr(C)]
-pub struct KernelArgs {
-    st: SystemTable<Runtime>,
-    // iter: MemoryMapIter<'a>,
-    frame_ptr: *mut u8,
-    frame_size: usize,
-}
-
-impl KernelArgs {
-    pub fn as_ptr(&self) -> *const KernelArgs {
-        unsafe { core::mem::transmute(self) }
-    }
+macro_rules! set_stack_pointer {
+    () => {
+        unsafe {
+            asm!(
+                "mov rax,0x200000;\
+                mov rsp,rax;"
+                : : : : "intel", "volatile"
+            )
+        }
+    };
 }
 
 fn switch_context(image: uefi::Handle, gop: &mut GraphicsOutput, st: SystemTable<Boot>, f: KernelEnterPoint) -> ! {
@@ -80,18 +82,23 @@ fn switch_context(image: uefi::Handle, gop: &mut GraphicsOutput, st: SystemTable
     let ptr = st.boot_services().allocate_pool(MemoryType::RUNTIME_SERVICES_DATA, mmap_size).log_warning().unwrap();
     let mmp = unsafe { core::slice::from_raw_parts_mut(ptr, mmap_size) };
     let mut frame = gop.frame_buffer();
-    info!("{:#X}",frame.as_mut_ptr() as u64);
-    info!("{}",frame.size());
     info!("exit boot services...");
     reset_console(&st);
-    let (st, _iter) = st.exit_boot_services(image, mmp).log_warning().unwrap();
-    let args = KernelArgs {
-        st,
-        // iter,
+    let (ref st, ref mut iter) = st.exit_boot_services(image, mmp).log_warning().unwrap();
+    let args = &KernelArgs {
+        st:  st as *const _ as u64,
+        iter: iter as *mut _ as u64,
+        kernel_start: unsafe { KERNEL_START },
+        kernel_end: unsafe { KERNEL_END },
+        stack_start: 0x200000,
+        stack_end: 0x100000, // total 256 pages
         frame_ptr: frame.as_mut_ptr(),
         frame_size: frame.size(),
     };
-    f(args)
+    let ptr = args as *const _ as u64;
+    println!("uefi:{}",ptr);
+    set_stack_pointer!();
+    f(ptr)
 }
 
 fn map_memory_layout<F: FnMut(&MemoryMapKey, &mut MemoryMapIter)>(bt: &BootServices, mut f: F) -> UefiResult<Result<()>> {
@@ -104,6 +111,21 @@ fn map_memory_layout<F: FnMut(&MemoryMapKey, &mut MemoryMapIter)>(bt: &BootServi
 }
 
 pub fn load_elf<'a>(bt: &BootServices, elf: &ElfFile) -> KernelEnterPoint {
+    let kernel_end = elf.program_iter().filter(|h| match h {
+        ProgramHeader::Ph64(h) => h.get_type().unwrap() == Type::Load,
+        _ => { false }
+    }).map(|h| h.virtual_addr()).max();
+
+    let kernel_start = elf.program_iter().filter(|h| match h {
+        ProgramHeader::Ph64(h) => h.get_type().unwrap() == Type::Load,
+        _ => { false }
+    }).map(|h| h.virtual_addr()).min();
+    info!("start: {:X}", kernel_start.unwrap());
+    info!("end: {:X}", kernel_end.unwrap());
+    unsafe {
+        KERNEL_START = kernel_start.unwrap();
+        KERNEL_END = kernel_end.unwrap();
+    }
     for header in elf.program_iter() {
         match header {
             ProgramHeader::Ph64(h) => { load(bt, elf, h) }
@@ -129,7 +151,6 @@ fn load(bt: &BootServices, elf: &ElfFile, header: &ProgramHeader64) {
         unsafe { bt.memset(dest as *mut u8, page_num * 4096, 0) };
         let buf = unsafe { core::slice::from_raw_parts_mut(header.virtual_addr as *mut u8, header.mem_size as usize) };
         let data = header.raw_data(elf);
-        info!("data: {} buf: {}", data.len(), buf.len());
         if data.len() == buf.len() {
             buf.copy_from_slice(data);
         }
@@ -184,8 +205,10 @@ fn switch_display_mode(gop: &mut GraphicsOutput, display_mode: (usize, usize)) {
             let info = m.info();
             info.resolution() == display_mode
         }).unwrap();
+    info!("mode size: {:?}", mode.info_size());
+    info!("mode info: {:?}", mode.info());
     gop.set_mode(&mode).log_warning().unwrap();
-    info!("{:?}",gop.current_mode_info());
+    info!("{:?}", gop.current_mode_info());
 }
 
 fn load_kernel(bt: &BootServices) -> KernelEnterPoint {

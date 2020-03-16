@@ -109,3 +109,12 @@ pub struct DescriptorTablePointer {
     /// 描述符的内存裸指针
     pub base: u64,
 }
+
+impl DescriptorTablePointer {
+    pub fn empty() -> Self{
+        Self{
+            limit:0,
+            base:0
+        }
+    }
+}

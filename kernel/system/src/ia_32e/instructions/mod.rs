@@ -7,5 +7,6 @@ pub mod register;
 pub mod interrupt;
 pub mod rflags;
 pub mod page_table;
+pub mod apic;
 
 

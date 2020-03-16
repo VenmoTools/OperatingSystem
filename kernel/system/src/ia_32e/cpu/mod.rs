@@ -5,5 +5,6 @@ pub use port::{Port, PortRead, PortReadWrite, PortWrite, UnsafePort};
 mod port;
 mod pic;
 pub mod control;
+pub mod apic;
 pub mod msr;
 

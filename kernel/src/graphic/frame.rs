@@ -1,17 +1,20 @@
+use core::marker::PhantomData;
 use core::mem;
 
 use crate::KernelArgs;
 
-pub struct RawFrameBuffer {
+pub struct RawFrameBuffer<'a> {
     size: usize,
     base: *mut u8,
+    _mark: PhantomData<&'a mut u8>,
 }
 
-impl RawFrameBuffer {
+impl<'a> RawFrameBuffer<'a> {
     pub fn new(args: &KernelArgs) -> Self {
         Self {
             size: args.frame_size,
             base: args.frame_ptr,
+            _mark: PhantomData,
         }
     }
     pub fn max_size(&self) -> usize {
@@ -21,6 +24,7 @@ impl RawFrameBuffer {
         Self {
             size: 3145728,
             base: args,
+            _mark: PhantomData,
         }
     }
     /// Modify the i-th byte of the frame buffer

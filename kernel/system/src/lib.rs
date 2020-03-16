@@ -18,6 +18,20 @@ mod mutex;
 pub mod ia_32e;
 pub mod result;
 pub mod devices;
+pub mod macros;
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct KernelArgs {
+    pub st: u64,
+    pub iter: u64,
+    pub kernel_start: u64,
+    pub kernel_end: u64,
+    pub stack_start: u64,
+    pub stack_end: u64,
+    pub frame_ptr: *mut u8,
+    pub frame_size: usize,
+}
 
 
 #[cfg(test)]
