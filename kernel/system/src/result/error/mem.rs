@@ -10,7 +10,9 @@ pub struct MemoryError {
 impl fmt::Display for MemoryError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.kind {
-            MemErrorKind::NotAligned => write!(f, "{}", self.msg)
+            MemErrorKind::NotAligned => write!(f, "{}", self.msg),
+            MemErrorKind::PageTableIndexNotMatch => write!(f, "{}", self.msg),
+            MemErrorKind::FrameNotMatch => write!(f, "{}", self.msg),
         }
     }
 }
@@ -24,4 +26,6 @@ impl MemoryError {
 #[derive(Debug)]
 pub enum MemErrorKind {
     NotAligned,
+    PageTableIndexNotMatch,
+    FrameNotMatch,
 }

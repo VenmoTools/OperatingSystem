@@ -4,41 +4,30 @@ use system::ia_32e::paging::{Frame, FrameAllocator, NotGiantPageSize, Page, Page
 use system::ia_32e::paging::mapper::{Mapper, MapperFlush};
 use system::ia_32e::paging::result::{CreatePageTableError, FlagUpdateError, FrameError, MapToError, TranslateError, UnmapError};
 use system::ia_32e::VirtAddr;
-
-use crate::alloc::string::String;
-
-#[derive(Debug)]
-pub struct Error {}
-
-impl Error {
-    pub fn with_string(_kind: ErrorKind, _s: String) -> Error {
-        Error {}
-    }
-}
-
-pub enum ErrorKind {
-    PageTableIndexNotMatch,
-    FrameNotMatch,
-}
-
+use system::result::{Error, MemErrorKind};
 
 pub struct RecursivePageTable<'a> {
-    pml4t: &'a mut PageTable,
+    pml4t: Option<&'a mut PageTable>,
     index: PageIndex,
 }
 
 impl<'a> RecursivePageTable<'a> {
-    /// 根据给定的页表创建递归页表
-    /// 页表必须是有效，即CR3寄存器必须包含其物理地址。
-    pub fn new(table: &'a mut PageTable) -> Result<Self, Error> {
+    pub fn empty() -> Self {
+        Self {
+            pml4t: None,
+            index: PageIndex::empty(),
+        }
+    }
+
+    pub fn init(&mut self, table: &'a mut PageTable) -> Result<(), Error> {
         // 传递的页表必须具有一个递归条目，即指向表本身的条目。
         // 引用必须使用该“循环”，即形式为“ 0o_xxx_xxx_xxx_xxx_0000”，其中“ xxx”是递归条目
         let page = Page::include_address(VirtAddr::new(table as *const _ as u64));
         let index = page.p4_index();
         if page.p3_index() != index || page.p2_index() != index || page.p1_index() != index {
             return Err(
-                Error::with_string(
-                    ErrorKind::PageTableIndexNotMatch,
+                Error::new_memory(
+                    MemErrorKind::PageTableIndexNotMatch,
                     format!("the page index not match p4:{:?} p3:{:?},p2{:?},p1:{:?}",
                             index, page.p3_index(), page.p2_index(), page.p1_index()),
                 ));
@@ -46,15 +35,22 @@ impl<'a> RecursivePageTable<'a> {
         let frame = CR3::read().0;
         let table_frame = table[index].frame();
         if Ok(frame) != table_frame {
-            return Err(Error::with_string(
-                ErrorKind::FrameNotMatch,
+            return Err(Error::new_memory(
+                MemErrorKind::FrameNotMatch,
                 format!("frame not match!,cr3 register frame:{:?} page table frame:{:?}", frame, table_frame),
             ));
         }
-        Ok(RecursivePageTable {
-            index,
-            pml4t: table,
-        })
+        self.index = index;
+        self.pml4t = Some(table);
+        Ok(())
+    }
+
+    /// 根据给定的页表创建递归页表
+    /// 页表必须是有效，即CR3寄存器必须包含其物理地址。
+    pub fn new(table: &'a mut PageTable) -> Result<Self, Error> {
+        let mut pt = Self::empty();
+        pt.init(table)?;
+        Ok(pt)
     }
 
     fn crate_helper<'help, A>(entry: &'help mut PageTableEntry, next_page: Page, allocator: &mut A) -> Result<&'help mut PageTable, CreatePageTableError>
@@ -91,7 +87,7 @@ impl<'a> RecursivePageTable<'a> {
     fn map_to_1g<A>(&mut self, page: Page<Page1GB>, frame: UnusedFrame<Page1GB>, flags: PageTableFlags, allocator: &mut A)
                     -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>>
         where A: FrameAllocator<Page4KB> {
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         // 根据页面创建3级页面
         let p3_page = create_p3_page(page, self.index);
         let p3 = unsafe { Self::create_next_table(&mut p4[page.p4_index()], p3_page, allocator)? };
@@ -108,7 +104,7 @@ impl<'a> RecursivePageTable<'a> {
     fn map_to_2mb<A>(&mut self, page: Page<Page2MB>, frame: UnusedFrame<Page2MB>, flags: PageTableFlags, allocator: &mut A)
                      -> Result<MapperFlush<Page2MB>, MapToError<Page2MB>>
         where A: FrameAllocator<Page4KB> {
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         // 创建3级页表
         let p3_page = create_p3_page(page, self.index);
         let p3 = unsafe { Self::create_next_table(&mut p4[page.p4_index()], p3_page, allocator)? };
@@ -127,7 +123,7 @@ impl<'a> RecursivePageTable<'a> {
     fn map_to_4kb<A>(&mut self, page: Page<Page4KB>, frame: UnusedFrame<Page4KB>, flags: PageTableFlags, allocator: &mut A)
                      -> Result<MapperFlush<Page4KB>, MapToError<Page4KB>>
         where A: FrameAllocator<Page4KB> {
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         // 创建3级页表
         let p3_page = create_p3_page(page, self.index);
         let p3 = unsafe { Self::create_next_table(&mut p4[page.p4_index()], p3_page, allocator)? };
@@ -192,7 +188,7 @@ impl<'a> Mapper<Page1GB> for RecursivePageTable<'a> {
 
     fn unmap(&mut self, page: Page<Page1GB>) -> Result<(Frame<Page1GB>, MapperFlush<Page1GB>), UnmapError> {
         // 获取4级页面项
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         let entry = &p4[page.p3_index()];
         // 检查PML4TE 页帧的有效性主要检查 PageTableFlags::PRESENT和PageTableFlags::HUGE_PAGE标志位
         entry.frame().map_err(|e| match e {
@@ -222,7 +218,7 @@ impl<'a> Mapper<Page1GB> for RecursivePageTable<'a> {
     }
 
     fn update_flags(&mut self, page: Page<Page1GB>, flags: PageTableFlags) -> Result<MapperFlush<Page1GB>, FlagUpdateError> {
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         if p4[page.p4_index()].is_unused() {
             return Err(FlagUpdateError::PageNotMapped);
         }
@@ -237,7 +233,7 @@ impl<'a> Mapper<Page1GB> for RecursivePageTable<'a> {
     }
 
     fn translate_page(&mut self, page: Page<Page1GB>) -> Result<Frame<Page1GB>, TranslateError> {
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         if p4[page.p4_index()].is_unused() {
             return Err(TranslateError::PageNotMapped);
         }
@@ -260,7 +256,7 @@ impl<'a> Mapper<Page2MB> for RecursivePageTable<'a> {
 
     fn unmap(&mut self, page: Page<Page2MB>) -> Result<(Frame<Page2MB>, MapperFlush<Page2MB>), UnmapError> {
         // 获取并检查4级页表项
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         let p4_entry = &p4[page.p4_index()];
         p4_entry.frame().map_err(|e| match e {
             FrameError::FrameNotPresent => UnmapError::PageNotMapped,
@@ -296,7 +292,7 @@ impl<'a> Mapper<Page2MB> for RecursivePageTable<'a> {
     }
 
     fn update_flags(&mut self, page: Page<Page2MB>, flags: PageTableFlags) -> Result<MapperFlush<Page2MB>, FlagUpdateError> {
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         if p4[page.p4_index()].is_unused() {
             return Err(FlagUpdateError::PageNotMapped);
         }
@@ -317,7 +313,7 @@ impl<'a> Mapper<Page2MB> for RecursivePageTable<'a> {
 
     fn translate_page(&mut self, page: Page<Page2MB>) -> Result<Frame<Page2MB>, TranslateError> {
         // P4
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         if p4[page.p4_index()].is_unused() {
             return Err(TranslateError::PageNotMapped);
         }
@@ -346,7 +342,7 @@ impl<'a> Mapper<Page4KB> for RecursivePageTable<'a> {
 
     fn unmap(&mut self, page: Page<Page4KB>) -> Result<(Frame<Page4KB>, MapperFlush<Page4KB>), UnmapError> {
         // 获取并检查4级页表项
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         let p4_entry = &p4[page.p4_index()];
         p4_entry.frame().map_err(|e| match e {
             FrameError::FrameNotPresent => UnmapError::PageNotMapped,
@@ -379,7 +375,7 @@ impl<'a> Mapper<Page4KB> for RecursivePageTable<'a> {
     }
 
     fn update_flags(&mut self, page: Page<Page4KB>, flags: PageTableFlags) -> Result<MapperFlush<Page4KB>, FlagUpdateError> {
-        let p4 = &mut self.pml4t;
+        let p4 = self.pml4t.as_mut().unwrap();
         if p4[page.p4_index()].is_unused() {
             return Err(FlagUpdateError::PageNotMapped);
         }
@@ -404,7 +400,7 @@ impl<'a> Mapper<Page4KB> for RecursivePageTable<'a> {
     }
 
     fn translate_page(&mut self, page: Page<Page4KB>) -> Result<Frame<Page4KB>, TranslateError> {
-        let p4 = &self.pml4t;
+        let p4 = self.pml4t.as_ref().unwrap();
         if p4[page.p4_index()].is_unused() {
             return Err(TranslateError::PageNotMapped);
         }

@@ -1,6 +1,6 @@
 pub use allocator::{FrameAllocator, UnusedFrame};
 pub use frame::Frame;
-pub use page::{NotGiantPageSize, Page, Page1GB, Page2MB, Page4KB, PageSize};
+pub use page::{NotGiantPageSize, Page, Page1GB, Page2MB, Page4KB, PageSize,PageRange,PageRangeInclude};
 pub use page_ops::{PageIndex, PageOffset};
 pub use page_table::{ENTRY_COUNT, PageTable, PageTableEntry};
 

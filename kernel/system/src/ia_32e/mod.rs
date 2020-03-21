@@ -1,4 +1,4 @@
-pub use addr::{NoCanonicalAddr, NoInvalidPhysAddr, PhysAddr, VirtAddr};
+pub use addr::{NoCanonicalAddr, NoInvalidPhysAddr, PhysAddr, VirtAddr,align_down,align_up};
 use core::fmt;
 
 ///! ia-32模式下的描述符操作，分页操作，PIC以及常用的指令

@@ -11,6 +11,9 @@ impl PageIndex {
         assert!(usize::from(index) < ENTRY_COUNT);
         Self(index)
     }
+    pub fn empty() -> Self{
+        Self(0)
+    }
     /// 索引最大不能超过512个,使用取模运算可防止超出512
     pub const fn new_truncate(index: u16) -> Self {
         Self(index % ENTRY_COUNT as u16)

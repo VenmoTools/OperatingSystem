@@ -49,7 +49,6 @@ pub unsafe fn load_es(selector:SegmentSelector){
         :"memory"
     );
 }
-
 /// 加载fs段选择子
 pub unsafe fn load_fs(selector:SegmentSelector){
     asm!(
@@ -59,7 +58,6 @@ pub unsafe fn load_fs(selector:SegmentSelector){
         :"memory"
     );
 }
-
 /// 加载gs段选择子
 pub unsafe fn load_gs(selector:SegmentSelector){
     asm!(

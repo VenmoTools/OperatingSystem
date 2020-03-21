@@ -27,12 +27,16 @@ spin = "0.5.2"
 uart_16550 = "0.2.0"
 # 键盘键位映射
 pc-keyboard = "0.3.1"
-# cpuid
-raw-cpuid="2.0.2"
+[dependencies.raw-cpuid]
+version = "7.0.3"
 
 [dependencies.system]
 path="system/"
 version="0.3.0"
+
+[dependencies.buddy_system_allocator]
+version="0.3.7"
+
 
 [features]
 default=["efi"]

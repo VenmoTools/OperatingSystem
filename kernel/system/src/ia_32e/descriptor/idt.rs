@@ -11,7 +11,7 @@ use core::fmt;
 use core::marker::PhantomData;
 use core::ops::{Deref, Index, IndexMut};
 
-use crate::bits::{BitOpt, PageFaultErrorCode};
+use crate::bits::{BitOpt, PageFaultErrorCode,flags::IdtFlags};
 use crate::ia_32e::PrivilegedLevel;
 use crate::ia_32e::VirtAddr;
 use crate::ia_32e::descriptor::DescriptorTablePointer;
@@ -178,6 +178,14 @@ impl<F> Entry<F> {
         self.gdt_selector = cs().0;
         self.options.set_present(true);
         &mut self.options
+    }
+
+    pub fn attr(&mut self) -> &mut EntryOptions {
+        &mut self.options
+    }
+
+    pub fn set_flags(&mut self,flags:IdtFlags){
+        self.options = EntryOptions(flags.bits());
     }
 }
 

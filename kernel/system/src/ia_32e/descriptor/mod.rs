@@ -1,5 +1,5 @@
 pub use descriptors::{Descriptor, DescriptorTablePointer};
-pub use gdt::GlobalDescriptorTable;
+pub use gdt::{GlobalDescriptorTable,GdtEntry};
 pub use idt::{EntryOptions, HandlerFuncWithErrCode, InterruptDescriptorTable, InterruptStackFrame, InterruptStackFrameValue};
 pub use segment::SegmentSelector;
 pub use tss::TaskStateSegment;

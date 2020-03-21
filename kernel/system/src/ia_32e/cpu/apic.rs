@@ -20,6 +20,10 @@ impl MSR {
     pub unsafe fn write(&mut self, data: u64) {
         wrmsr(self.0, data)
     }
+
+    pub unsafe fn write_msr(msr:u32,value:u64){
+        wrmsr(msr,value)
+    }
 }
 
 /// The Extended Feature Enable Register.

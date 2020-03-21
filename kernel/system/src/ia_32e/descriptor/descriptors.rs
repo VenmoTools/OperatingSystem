@@ -8,7 +8,9 @@ use super::tss::TaskStateSegment;
 /// 64位描述符
 #[derive(Clone)]
 pub enum Descriptor {
-    /// 用户代码段描述符
+    /// 内核描述符
+    KernelSegment(u64),
+    /// 用户段描述符
     UserSegment(u64),
     /// 系统段描述符
     SystemSegment(u64, u64),
@@ -21,6 +23,9 @@ impl fmt::Debug for Descriptor {
         match &self {
             Descriptor::UserSegment(seg) => {
                 x.field("user_segment", &Hex(*seg));
+            }
+            Descriptor::KernelSegment(seg) => {
+                x.field("kernel_segment", &Hex(*seg));
             }
             Descriptor::SystemSegment(seg_l, seg_h) => {
                 x.field("system_segment_low", &Hex(*seg_l));
@@ -40,11 +45,24 @@ impl Descriptor {
     /// +-----------+--+---+--+---+--------+--+-----+--+---+--+--+--+------------+----------+
     pub fn kernel_code_segment() -> Descriptor {
         use self::DescriptorFlags as Flags;
-        let flags = Flags::USER_SEGMENT | Flags::PRESENT | Flags::EXECUTABLE | Flags::LONG_MODE;
-        Descriptor::UserSegment(flags.bits())
+        let flags = Flags::USER_SEGMENT | Flags::PRESENT | Flags::EXECUTABLE | Flags::LONG_MODE | Flags::DPL_RING_0;
+        Descriptor::KernelSegment(flags.bits())
     }
 
-    /// 用户数据段描述符Ring3
+    /// 内核数据段描述符
+    pub fn kernel_data_segment() -> Descriptor {
+        use self::DescriptorFlags as Flags;
+        let flags = Flags::USER_SEGMENT | Flags::PRESENT | Flags::LONG_MODE | Flags::DPL_RING_0;
+        Descriptor::KernelSegment(flags.bits())
+    }
+    /// 线程本地存储 tls
+    pub fn kernel_thread_local_store() -> Descriptor {
+        use self::DescriptorFlags as Flags;
+        let flags = Flags::USER_SEGMENT | Flags::PRESENT | Flags::LONG_MODE | Flags::DPL_RING_0;
+        Descriptor::KernelSegment(flags.bits())
+    }
+
+    /// 用户数据段描述符 Ring3
     /// |   63-56   |55|54 |53|52 | 51-48  |47|46-45 |44|43 |42|41|40| 39-16      |15-0      |
     /// +-----------+--+---+--+---+--------+--+------+--+---+--+--+--+------------+----------+
     /// |BaseAddr(H)|G |D/B|L |AVL|limit(H)|P |DPL   |S |C/D|E |W |A | BaseAddr(L)| limit(L) |
@@ -111,10 +129,10 @@ pub struct DescriptorTablePointer {
 }
 
 impl DescriptorTablePointer {
-    pub fn empty() -> Self{
-        Self{
-            limit:0,
-            base:0
+    pub fn empty() -> Self {
+        Self {
+            limit: 0,
+            base: 0,
         }
     }
 }

@@ -1,28 +1,44 @@
-use system::bits::PageFaultErrorCode;
-use system::ia_32e::cpu::ChainedPics;
-use system::ia_32e::descriptor::{InterruptDescriptorTable, InterruptStackFrame};
-use system::Mutex;
-
 use lazy_static::lazy_static;
+use system::bits::PageFaultErrorCode;
+use system::ia_32e::apic::LocalAPIC;
+use system::ia_32e::descriptor::{InterruptDescriptorTable, InterruptStackFrame};
+use system::ia_32e::instructions::page_table::flush_all;
 
-use crate::{loop_hlt, print, println};
+use crate::{loop_hlt, println};
 
-pub const PIC_MAIN: u8 = 32;
-pub const PIC_SLAVE: u8 = PIC_MAIN + 8;
+static mut LOCAL_APIC: LocalAPIC = LocalAPIC {
+    address: 0,
+    x2apic: false,
+};
 
-// 使用Mutex可以安全操作内部可变的数据
-pub static PICS: Mutex<ChainedPics> = Mutex::new(unsafe { ChainedPics::new(PIC_MAIN, PIC_SLAVE) });
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum IpiKind {
+    WakeUp = 0x40,
+    Tlb = 0x41,
+    Switch = 0x42,
+    Pit = 0x43,
+}
 
+impl From<IpiKind> for usize {
+    fn from(kind: IpiKind) -> Self {
+        match kind {
+            IpiKind::WakeUp => 0x40,
+            IpiKind::Tlb => 0x41,
+            IpiKind::Switch => 0x42,
+            IpiKind::Pit => 0x43,
+        }
+    }
+}
+
+pub enum SystemCall {
+    Base = 0x80
+}
 
 pub fn init_idt() {
     IDT.load();
 }
 
-pub fn init_pics() {
-    unsafe {
-        PICS.lock().initialize();
-    }
-}
 //---------------------------------中断描述符表--------------------------------------
 
 lazy_static! {
@@ -51,56 +67,37 @@ lazy_static! {
         // unsafe {
         //     idt.double_fault.set_handler_fn(double_fault).set_stack_index(gdt::DOUBLE_FAULT_LIST_INDEX);
         // }
-        idt[InterruptIndex::Timer.into()].set_handler_fn(timer_interrupt);
-        idt[InterruptIndex::KeyBoard.into()].set_handler_fn(keyboard_interrupt);
+        idt[IpiKind::WakeUp.into()].set_handler_fn(ipi_wakeup);
+        idt[IpiKind::Switch.into()].set_handler_fn(ipi_switch);
+        idt[IpiKind::Tlb.into()].set_handler_fn(ipi_tlb);
+        idt[IpiKind::Pit.into()].set_handler_fn(ipi_pit);
+        // idt[SystemCall::Base].set_handler_fn();
+        // idt[SystemCall::Base].set_flags(IdtFlags::PRESENT | IdtFlags::RING_3 | IdtFlags::INTERRUPT);
         idt
     };
 }
 
 //---------------------------------中断处理--------------------------------------
-// 中断索引表
-#[derive(Copy, Clone, Debug)]
-#[repr(u8)]
-enum InterruptIndex {
-    // 时钟中断
-    Timer = PIC_MAIN,
-    // 键盘中断
-    KeyBoard,
+extern "x86-interrupt" fn ipi_wakeup(_stackframe: &mut InterruptStackFrame) {
+    unsafe { LOCAL_APIC.eoi() }
 }
 
-impl From<usize> for InterruptIndex {
-    fn from(index: usize) -> Self {
-        Self::from(index as u8)
+extern "x86-interrupt" fn ipi_switch(_stackframe: &mut InterruptStackFrame) {
+    unsafe { LOCAL_APIC.eoi() }
+    //todo: Switch
+}
+
+extern "x86-interrupt" fn ipi_pit(_stackframe: &mut InterruptStackFrame) {
+    unsafe { LOCAL_APIC.eoi() }
+    //todo: pit
+}
+
+extern "x86-interrupt" fn ipi_tlb(_stackframe: &mut InterruptStackFrame) {
+    unsafe {
+        LOCAL_APIC.eoi();
+        flush_all();
     }
 }
-
-impl From<u8> for InterruptIndex {
-    fn from(index: u8) -> Self {
-        match index {
-            32 => InterruptIndex::Timer,
-
-            0..32 => {
-                panic!("0-31 vector already used for exception!")
-            }
-            _ => {
-                panic!("the index is invalid!")
-            }
-        }
-    }
-}
-
-impl From<InterruptIndex> for u8 {
-    fn from(index: InterruptIndex) -> Self {
-        index as u8
-    }
-}
-
-impl From<InterruptIndex> for usize {
-    fn from(index: InterruptIndex) -> Self {
-        u8::from(index) as usize
-    }
-}
-
 
 /// 时钟中断
 /// 该频率是常量HZ，该值一般是在100 ~ 1000之间。
@@ -108,38 +105,12 @@ impl From<InterruptIndex> for usize {
 /// 另外该中断的中断处理函数除了更新系统时间外，还需要更新本地CPU统计数。
 /// 指的是调用scheduler_tick递减进程的时间片，若进程的时间片递减到0，进程则被调度出去而放弃CPU使用权
 extern "x86-interrupt" fn timer_interrupt(_stackframe: &mut InterruptStackFrame) {
-    unsafe {
-        PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.into());
-    }
+    //todo:
 }
 
 /// 键盘中断
 extern "x86-interrupt" fn keyboard_interrupt(_stackframe: &mut InterruptStackFrame) {
-    use system::ia_32e::cpu::Port;
-    use pc_keyboard::{Keyboard, layouts, ScancodeSet1, DecodedKey};
-
-    lazy_static! {
-        static ref KEYBOARD:Mutex<Keyboard<layouts::Us104Key,ScancodeSet1>> =
-        Mutex::new(Keyboard::new(layouts::Us104Key,ScancodeSet1));
-    }
-
-
-    let mut keyboard = KEYBOARD.lock();
-    let mut port = unsafe { Port::new(0x60) };
-    let scan_code: u8 = port.read();
-
-    if let Ok(Some(key_event)) = keyboard.add_byte(scan_code) {
-        if let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => print!("{}", character),
-                DecodedKey::RawKey(key) => print!("{:?}", key),
-            }
-        }
-    }
-
-    unsafe {
-        PICS.lock().notify_end_of_interrupt(InterruptIndex::KeyBoard.into());
-    }
+    //todo:
 }
 
 //---------------------------------中断处理--------------------------------------

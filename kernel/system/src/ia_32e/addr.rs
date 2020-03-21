@@ -107,6 +107,11 @@ impl VirtAddr {
     pub fn as_u64(&self) -> u64 {
         self.0
     }
+    /// 将虚拟地址结构转为usize类型
+    pub fn as_usize(&self) -> usize{
+        self.0 as usize
+    }
+
     /// 从给定的指针中创建虚拟地址
     pub fn from_pointer<T>(pointer: *const T) -> Self {
         Self::new(cast::u64(pointer as usize))
@@ -262,12 +267,12 @@ impl Sub<VirtAddr> for VirtAddr {
 }
 
 
-fn align_down(addr: u64, align: u64) -> u64 {
+pub fn align_down(addr: u64, align: u64) -> u64 {
     assert_eq!(align & (align - 1), 0, "`align` must be a power of two");
     addr & !(align - 1)
 }
 
-fn align_up(addr: u64, align: u64) -> u64 {
+pub fn align_up(addr: u64, align: u64) -> u64 {
     assert_eq!(align & (align - 1), 0, "`align` must be a power of two");
 
     let mask = align - 1;

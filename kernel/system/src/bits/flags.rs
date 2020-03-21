@@ -1,6 +1,6 @@
 ///! 存放所有的位操作
 
-use crate::bitflags::bitflags;
+use bitflags::bitflags;
 
 bitflags! {
     /// 页异常错误码
@@ -146,13 +146,44 @@ bitflags! {
    /// 1 	1 	1 	0 	64位中断门描述符
    /// 1 	1 	1 	1 	64位陷进门描述符
    pub struct DescriptorFlags: u64 {
+        const ACCESSED         = 1 << 40;
         const WRITABLE          = 1 << 41;
         const CONFORMING        = 1 << 42;
         const EXECUTABLE        = 1 << 43;
         const USER_SEGMENT      = 1 << 44;
         const PRESENT           = 1 << 47;
         const LONG_MODE         = 1 << 53;
+        const DPL_RING_0        = 0 << 45;
+        const DPL_RING_1        = 1 << 45;
+        const DPL_RING_2        = 2 << 45;
         const DPL_RING_3        = 3 << 45;
+    }
+}
+
+
+bitflags!{
+    pub struct GdtAccessFlags: u8 {
+        const TSS_AVAIL = 0x9;
+        const TSS_BUSY = 0xB;
+        const PRESENT = 1 << 7;
+        const RING_0 = 0 << 5;
+        const RING_1 = 1 << 5;
+        const RING_2 = 2 << 5;
+        const RING_3 = 3 << 5;
+        const SYSTEM = 1 << 4;
+        const EXECUTABLE = 1 << 3;
+        const CONFORMING = 1 << 2;
+        const PRIVILEGE = 1 << 1;
+        const DIRTY = 1;
+
+    }
+}
+
+bitflags!{
+    pub struct GdtFlags: u8{
+        const PAGE_SIZE = 1 << 7;
+        const PROTECTED_MODE = 1 << 6;
+        const LONG_MODE = 1 << 5;
     }
 }
 
@@ -256,7 +287,18 @@ bitflags! {
         const PROTECTION_KEY = 1 << 22;
     }
 }
-
+bitflags! {
+    pub struct IdtFlags: u16 {
+        const PRESENT = 1 << 7;
+        const RING_0 = 0 << 5;
+        const RING_1 = 1 << 5;
+        const RING_2 = 2 << 5;
+        const RING_3 = 3 << 5;
+        const SS = 1 << 4;
+        const INTERRUPT = 0xE;
+        const TRAP = 0xF;
+    }
+}
 bitflags! {
     /// RFlags寄存器
     pub struct RFlags: u64 {

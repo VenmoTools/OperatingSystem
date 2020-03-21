@@ -1,7 +1,6 @@
-pub use error::mem::MemoryError;
+pub use error::mem::{MemoryError, MemErrorKind};
 
 use crate::alloc::string::String;
-use crate::result::error::mem::MemErrorKind;
 
 pub mod error;
 
@@ -16,9 +15,18 @@ pub struct Error {
     repr: Repr,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum ProcessErrorKind {
+    TryAgain
+}
+
 impl Error {
     pub fn new_memory(kind: MemErrorKind, msg: String) -> Self {
         Error { repr: Repr::Memory(MemoryError::new(kind, msg)) }
+    }
+
+    pub fn new_process(kind: ProcessErrorKind, msg: Option<String>) -> Self {
+        Error { repr: Repr::Process(ProcessError::new(kind, msg)) }
     }
 }
 
@@ -33,6 +41,24 @@ impl<T> ResultEx<T> for Result<T> {
 
 #[derive(Debug)]
 pub enum Repr {
-    Memory(MemoryError)
+    Memory(MemoryError),
+    Process(ProcessError),
+}
+
+#[derive(Debug,Clone)]
+pub struct ProcessError {
+    msg: Option<String>,
+    no: isize,
+}
+
+impl ProcessError {
+    pub fn new(kind: ProcessErrorKind, msg: Option<String>) -> Self {
+        Self {
+            msg,
+            no: match kind {
+                ProcessErrorKind::TryAgain => 11
+            },
+        }
+    }
 }
 

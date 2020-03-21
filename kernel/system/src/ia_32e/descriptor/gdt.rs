@@ -1,5 +1,46 @@
 use crate::ia_32e::descriptor::{Descriptor, DescriptorTablePointer, SegmentSelector};
 use crate::ia_32e::PrivilegedLevel;
+use crate::bits::flags::{GdtAccessFlags, GdtFlags};
+use core::fmt;
+
+
+#[derive(Copy, Clone, Debug)]
+#[repr(packed)]
+pub struct GdtEntry {
+    pub limit_low: u16,
+    pub offset_low: u16,
+    pub offset_mid: u8,
+    pub access: u8,
+    pub flags_limit_high: u8,
+    pub offset_high: u8,
+}
+
+
+impl GdtEntry {
+    pub fn new(offset: u32, limit: u32, access: GdtAccessFlags, flags: GdtFlags) -> Self {
+        GdtEntry {
+            limit_low: limit as u16,
+            offset_low: offset as u16,
+            offset_mid: (offset >> 16) as u8,
+            access: access.bits(),
+            flags_limit_high: flags.bits() & 0xF0 | ((limit >> 16) as u8) & 0x0F,
+            offset_high: (offset >> 24) as u8,
+        }
+    }
+
+    pub fn privileged_level(&self) -> PrivilegedLevel {
+        let flags = GdtAccessFlags::from_bits_truncate(self.access);
+        return if flags.contains(GdtAccessFlags::RING_0) {
+            PrivilegedLevel::Ring0
+        } else if flags.contains(GdtAccessFlags::RING_1) {
+            PrivilegedLevel::Ring1
+        } else if flags.contains(GdtAccessFlags::RING_1) {
+            PrivilegedLevel::Ring2
+        } else {
+            PrivilegedLevel::Ring3
+        };
+    }
+}
 
 /// 在加载段选择子的过程中，处理器会将选择子作为索引，
 /// 从GDTR寄存器指向的描述符表中索引(找出)段描述符，
@@ -24,10 +65,22 @@ use crate::ia_32e::PrivilegedLevel;
 ///     gdt.load()
 /// }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct GlobalDescriptorTable {
     table: [u64; 8],
     next_free: usize,
+}
+
+impl fmt::Debug for GlobalDescriptorTable {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use crate::bits::flags::DescriptorFlags as Flags;
+        f.write_str("GlobalDescriptorTable\n")?;
+        for descriptor in self.table.iter() {
+            let flags = Flags::from_bits_truncate(*descriptor);
+            f.write_fmt(format_args!("descriptor: {:#X}\tflags:{:?}\n", descriptor, flags))?;
+        }
+        f.write_fmt(format_args!("total: {}", self.table.len()))
+    }
 }
 
 impl GlobalDescriptorTable {
@@ -38,6 +91,13 @@ impl GlobalDescriptorTable {
             table: [0; 8],
             next_free: 1,
         }
+    }
+
+    pub fn add_entry(&mut self, entry: GdtEntry) -> SegmentSelector{
+        let rpl = entry.privileged_level();
+        let e = &entry as *const _ as u64;
+        let index = self.push(e);
+        SegmentSelector::new(index as u16, rpl)
     }
 
     /// 从给定DescriptorTablePointer指针返回GDT结构,GDT项默认为8个
@@ -63,10 +123,25 @@ impl GlobalDescriptorTable {
         }
         panic!("GDT max descriptor length is 8")
     }
+    /// 将描述符注册到指定的索引处，SystemSegment描述符占用2项，因此0<index<=6
+    pub fn add_indexed_descriptor(&mut self, index: usize, descr: Descriptor) {
+        assert!(index > 0 && index < 8);
+        let mut index = index;
+        match descr {
+            Descriptor::UserSegment(value) | Descriptor::KernelSegment(value) => self.table[index] = value,
+            Descriptor::SystemSegment(value_low, value_high) => {
+                assert!(index < 7);
+                self.table[index] = value_low;
+                index += 1;
+                self.table[index] = value_high;
+            }
+        };
+    }
+
     /// 添加描述符，添加描述符时会区分描述符的类型（用户，系统），再使用时需要指定当前描述符类型
     pub fn add_descriptor(&mut self, descr: Descriptor) -> SegmentSelector {
         let index = match descr {
-            Descriptor::UserSegment(value) => self.push(value),
+            Descriptor::UserSegment(value) | Descriptor::KernelSegment(value) => self.push(value),
             Descriptor::SystemSegment(value_low, value_hight) => {
                 let index = self.push(value_low);
                 self.push(value_hight);

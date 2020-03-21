@@ -4,11 +4,11 @@
 #![allow(dead_code)]
 #![allow(unused_assignments)]
 #![feature(abi_x86_interrupt)]
-
+#![feature(core_intrinsics)]
 
 #[macro_use]
 extern crate alloc;
-extern crate bitflags;
+// extern crate bitflags;
 
 
 pub use mutex::Mutex;
@@ -19,6 +19,8 @@ pub mod ia_32e;
 pub mod result;
 pub mod devices;
 pub mod macros;
+#[macro_use]
+pub mod console;
 
 #[repr(C)]
 #[derive(Debug)]
