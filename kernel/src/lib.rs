@@ -6,6 +6,7 @@
 #![feature(abi_x86_interrupt)]
 #![feature(asm)]
 #![deny(warnings)]
+#![feature(naked_functions)]
 
 #[macro_use]
 pub extern crate alloc;
@@ -14,14 +15,14 @@ use core::alloc::Layout;
 use core::panic::PanicInfo;
 
 use buddy_system_allocator::LockedHeap;
-use system::ia_32e::paging::PageTable;
+use system::ia_32e::instructions::interrupt::enable;
 use system::KernelArgs;
 use uefi::table::boot::MemoryMapIter;
 
 #[cfg(feature = "bios")]
 pub mod bios;
 #[cfg(feature = "efi")]
-pub mod efi;
+pub mod efis;
 
 #[cfg(feature = "efi")]
 pub mod graphic;
@@ -30,9 +31,7 @@ pub mod paging;
 #[macro_use]
 pub mod serial;
 pub mod memory;
-
-pub const RECU_PAGE_TABLE_ADDR: *mut PageTable = 0xFFFF_FFFF_FFFF_F000 as *mut PageTable;
-
+pub mod apic;
 
 #[global_allocator]
 pub static HEAP: LockedHeap = LockedHeap::empty();
@@ -91,17 +90,13 @@ impl<'a> Initializer<'a> {
     }
     #[cfg(feature = "efi")]
     pub fn initialize_all(&self) {
-        // 初始化gdt
-        efi::descriptor::init_gdt_and_tss();
+        // BUG! gdt
+        // efis::descriptor::init_gdt_and_tss();
         // 初始化idt
-        efi::descriptor::init_idt();
+        efis::descriptor::init_idt();
         // 初始化内存
-        // memory::frame::frame_allocator_init(self.iter);
-        // 初始化分页
-        // if let Err(e) = memory::page_table::init_page(unsafe { &mut *RECU_PAGE_TABLE_ADDR }){
-        //     println!("{:?}",e);
-        // }
         init_heap(0x1400000, 0x3F36000);
+        enable();
     }
 }
 

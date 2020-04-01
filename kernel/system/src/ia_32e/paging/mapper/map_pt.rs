@@ -7,6 +7,7 @@ use crate::bits::PageTableFlags;
 use crate::ia_32e::paging::mapper::{MapperFlush, Mapper, MapAllSize};
 use crate::ia_32e::paging::result::FrameError;
 use crate::ia_32e::VirtAddr;
+use crate::ia_32e::cpu::control::CR3;
 
 /// 将给定的物理帧转换为页表裸指针
 pub trait PhysicalToVirtual {
@@ -95,6 +96,17 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
             level_4_table,
         }
     }
+
+    pub unsafe fn from_cr3(phy_to_vir: P) -> Self {
+        let (frame, _) = CR3::read();
+        let pt = frame.start_address().as_u64() as *mut PageTable;
+        let pml4t = &mut *pt;
+        Self {
+            pt_walker: PageTableWalker::new(phy_to_vir),
+            level_4_table: pml4t,
+        }
+    }
+
     // 根据给定的帧和页面进行1gb页面映射
     fn map_to_1g<A>(&mut self, page: Page<Page1GB>, frame: UnusedFrame<Page1GB>, flags: PageTableFlags, allocator: &mut A)
                     -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>>
@@ -312,35 +324,35 @@ impl<'a, P: PhysicalToVirtual> Mapper<Page1GB> for MappedPageTable<'a, P> {
     }
 }
 
-impl<'a, P: PhysicalToVirtual> MapAllSize for MappedPageTable<'a, P>{
+impl<'a, P: PhysicalToVirtual> MapAllSize for MappedPageTable<'a, P> {
     fn translate(&self, addr: VirtAddr) -> TranslationResult {
         let p4 = &self.level_4_table;
-        let p3 = match self.pt_walker.next_table(&p4[addr.page4_index()]){
-            Ok(pt)=>pt,
-            Err(PageTableWalkError::NotMapped) =>return TranslationResult::PageNotMapped,
+        let p3 = match self.pt_walker.next_table(&p4[addr.page4_index()]) {
+            Ok(pt) => pt,
+            Err(PageTableWalkError::NotMapped) => return TranslationResult::PageNotMapped,
             Err(PageTableWalkError::MappedToHugePage) => panic!("level 4 entry has huge page bit set")
         };
-        let p2 = match self.pt_walker.next_table(&p3[addr.page3_index()]){
-            Ok(pt)=>pt,
-            Err(PageTableWalkError::NotMapped) =>return TranslationResult::PageNotMapped,
+        let p2 = match self.pt_walker.next_table(&p3[addr.page3_index()]) {
+            Ok(pt) => pt,
+            Err(PageTableWalkError::NotMapped) => return TranslationResult::PageNotMapped,
             Err(PageTableWalkError::MappedToHugePage) => {
-                let frame =Frame::include_address(p3[addr.page3_index()].addr());
+                let frame = Frame::include_address(p3[addr.page3_index()].addr());
                 let offset = addr.as_u64() & 0o_777_777_7777;
                 return TranslationResult::Frame1GB { frame, offset };
             }
         };
-        let p1 = match self.pt_walker.next_table(&p2[addr.page2_index()]){
-            Ok(pt)=>pt,
-            Err(PageTableWalkError::NotMapped) =>return TranslationResult::PageNotMapped,
+        let p1 = match self.pt_walker.next_table(&p2[addr.page2_index()]) {
+            Ok(pt) => pt,
+            Err(PageTableWalkError::NotMapped) => return TranslationResult::PageNotMapped,
             Err(PageTableWalkError::MappedToHugePage) => {
-                let frame =Frame::include_address(p2[addr.page2_index()].addr());
+                let frame = Frame::include_address(p2[addr.page2_index()].addr());
                 let offset = addr.as_u64() & 0o_777_777_7777;
                 return TranslationResult::Frame1GB { frame, offset };
             }
         };
 
         let entry = &p1[addr.page1_index()];
-        if entry.is_unused(){
+        if entry.is_unused() {
             return TranslationResult::PageNotMapped;
         }
 

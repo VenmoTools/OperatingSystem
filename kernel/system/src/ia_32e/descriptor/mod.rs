@@ -1,6 +1,9 @@
 pub use descriptors::{Descriptor, DescriptorTablePointer};
 pub use gdt::{GlobalDescriptorTable,GdtEntry};
-pub use idt::{EntryOptions, HandlerFuncWithErrCode, InterruptDescriptorTable, InterruptStackFrame, InterruptStackFrameValue};
+#[cfg(not(feature="call"))]
+pub use idt::{EntryOptions, HandlerFuncWithErrCode,HandlerFunc,PageFaultHandlerFunc, InterruptDescriptorTable, InterruptStackFrame, InterruptStackFrameValue};
+#[cfg(feature="call")]
+pub use idt::{EntryOptions, InterruptDescriptorTable, InterruptStackFrame, InterruptStackFrameValue};
 pub use segment::SegmentSelector;
 pub use tss::TaskStateSegment;
 

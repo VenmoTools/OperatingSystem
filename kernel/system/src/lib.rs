@@ -5,10 +5,10 @@
 #![allow(unused_assignments)]
 #![feature(abi_x86_interrupt)]
 #![feature(core_intrinsics)]
+#![feature(naked_functions)]
 
 #[macro_use]
 extern crate alloc;
-// extern crate bitflags;
 
 
 pub use mutex::Mutex;

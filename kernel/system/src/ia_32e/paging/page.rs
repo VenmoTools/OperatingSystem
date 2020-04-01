@@ -31,7 +31,7 @@ pub struct Page2MB {}
 
 impl PageSize for Page2MB {
     const P_SIZE: u64 = Page4KB::P_SIZE * 512;
-    const DISPLAY_STR: &'static str = "page 1 MB";
+    const DISPLAY_STR: &'static str = "page 2 MB";
 }
 
 impl NotGiantPageSize for Page2MB {}

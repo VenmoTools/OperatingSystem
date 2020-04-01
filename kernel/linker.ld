@@ -16,7 +16,7 @@ SECTIONS
         . = ALIGN(4K);
         etext = .;
     }
-
+    . = ALIGN(4K);
     .rodata : {
         srodata = .;
         *(.rodata .rodata.*)

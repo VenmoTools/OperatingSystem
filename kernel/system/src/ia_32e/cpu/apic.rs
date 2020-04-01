@@ -24,6 +24,10 @@ impl MSR {
     pub unsafe fn write_msr(msr:u32,value:u64){
         wrmsr(msr,value)
     }
+
+    pub fn read_msr(msr:u32) -> u64{
+        rdmsr(msr)
+    }
 }
 
 /// The Extended Feature Enable Register.

@@ -37,6 +37,16 @@ bitflags!{
 }
 
 bitflags! {
+    pub struct LocalAPICFlags:u32{
+        /// 指示处理器是否为引导处理器
+        const BSP = 1 << 8;
+        /// 开启或关闭Local APIC
+        const APIC_GLOBAL_ENABLE = 1 << 11;
+        // 上电或重置后，该APIC Base field设置为FEE0 0000H
+    }
+}
+
+bitflags! {
     #[allow(non_upper_case_globals)]
     pub struct LVTEntryFlags: u32{
         /// 投递模式标志位
@@ -154,8 +164,6 @@ bitflags! {
         const PRESENT           = 1 << 47;
         const LONG_MODE         = 1 << 53;
         const DPL_RING_0        = 0 << 45;
-        const DPL_RING_1        = 1 << 45;
-        const DPL_RING_2        = 2 << 45;
         const DPL_RING_3        = 3 << 45;
     }
 }

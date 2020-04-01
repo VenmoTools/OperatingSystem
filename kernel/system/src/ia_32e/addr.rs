@@ -309,6 +309,9 @@ impl PhysAddr {
     pub fn as_u64(self) -> u64 {
         self.0
     }
+    pub fn as_usize(self) -> usize{
+        self.0 as usize
+    }
     /// 用于判断物理地址是否是零地址
     pub fn is_null(&self) -> bool {
         self.0 == 0

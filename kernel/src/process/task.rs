@@ -113,6 +113,7 @@ pub struct Process {
     pub cpu_id: Option<usize>,
     // 进程执行次数
     pub ticks: u64,
+    pub kernel_fx: Option<Box<[u8]>>,
     // 内核栈
     pub kernel_stack: Option<Box<[u8]>>,
     // 用户态堆
@@ -136,6 +137,7 @@ impl Process {
             cpu_id: None,
             reg: ProcessRegister::new(),
             ticks: 0,
+            kernel_fx: None,
             kernel_stack: None,
             user_heap: None,
             user_stack: None,

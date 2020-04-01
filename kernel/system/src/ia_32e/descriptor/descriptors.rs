@@ -50,9 +50,13 @@ impl Descriptor {
     }
 
     /// 内核数据段描述符
+    /// | 63-56     |55|54 |53|52 |51-48   |47|46-45|44|43|42|41|40|39-16       |15 - 0    |
+    /// +-----------+--+---+--+---+--------+--+-----+--+--+--+--+--+------------+----------+
+    /// |BaseAddr(H)|G |D/B|L |AVL|limit(H)|P |DPL  |S |0 |E |W |A | BaseAddr(L)| limit(L) |
+    /// +-----------+--+---+--+---+--------+--+-----+--+--+--+--+--+------------+----------+
     pub fn kernel_data_segment() -> Descriptor {
         use self::DescriptorFlags as Flags;
-        let flags = Flags::USER_SEGMENT | Flags::PRESENT | Flags::LONG_MODE | Flags::DPL_RING_0;
+        let flags = Flags::USER_SEGMENT | Flags::PRESENT | Flags::DPL_RING_0 | Flags::WRITABLE;
         Descriptor::KernelSegment(flags.bits())
     }
     /// 线程本地存储 tls

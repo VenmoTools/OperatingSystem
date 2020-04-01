@@ -145,8 +145,10 @@ fn load(bt: &BootServices, elf: &ElfFile, header: &ProgramHeader64) {
             (1 + (total >> 12)) as usize
         };
         assert_eq!(dest as u64, header.virtual_addr & !0x0fff);
-
-        bt.allocate_pages(AllocateType::Address(dest), MemoryType::LOADER_CODE, page_num).log_warning().unwrap();
+        // BUG! when use system crate not use 'call' features it panic!
+        if let Err(e) = bt.allocate_pages(AllocateType::Address(dest), MemoryType::LOADER_CODE, page_num).log_warning(){
+            panic!("occur when allocate kernel memory{:?}",e);
+        }
 
         unsafe { bt.memset(dest as *mut u8, page_num * 4096, 0) };
         let buf = unsafe { core::slice::from_raw_parts_mut(header.virtual_addr as *mut u8, header.mem_size as usize) };

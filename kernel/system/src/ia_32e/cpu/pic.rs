@@ -5,6 +5,7 @@ const ICW4: u8 = 0x01;
 const ICW1: u8 = 0x11;
 const ICW3_M: u8 = 0x04;
 const ICW3_S: u8 = 0x02;
+const MASKED: u8 = 0xff;
 
 /// 单PIC 8259A的结构
 #[derive(Debug)]
@@ -106,6 +107,12 @@ impl ChainedPics {
         // 恢复掩码
         self.main.data.write(saved_mask1);
         self.slave.data.write(saved_mask2);
+    }
+
+    /// 屏蔽8259a中断控制器
+    pub unsafe fn disable_8259a(&mut self) {
+        self.main.data.write(MASKED);
+        self.slave.data.write(MASKED);
     }
 
     /// 判断当前的中断号是否可以被主片或从片处理

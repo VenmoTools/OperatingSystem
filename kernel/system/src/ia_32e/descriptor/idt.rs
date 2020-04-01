@@ -10,8 +10,10 @@
 use core::fmt;
 use core::marker::PhantomData;
 use core::ops::{Deref, Index, IndexMut};
-
-use crate::bits::{BitOpt, PageFaultErrorCode,flags::IdtFlags};
+#[cfg(not(feature = "call"))]
+use crate::bits::{BitOpt, PageFaultErrorCode, flags::IdtFlags};
+#[cfg(feature = "call")]
+use crate::bits::{BitOpt, flags::IdtFlags};
 use crate::ia_32e::PrivilegedLevel;
 use crate::ia_32e::VirtAddr;
 use crate::ia_32e::descriptor::DescriptorTablePointer;
@@ -72,12 +74,18 @@ impl fmt::Debug for InterruptStackFrame {
 }
 
 /// 异常处理函数（无返回码）
+#[cfg(not(feature = "call"))]
 pub type HandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame);
 /// 异常处理函数（含返回码）
+#[cfg(not(feature = "call"))]
 pub type HandlerFuncWithErrCode = extern "x86-interrupt" fn(&mut InterruptStackFrame, code: u64);
-
 /// `#PF`异常处理函数（含返回码）
+#[cfg(not(feature = "call"))]
 pub type PageFaultHandlerFunc = extern "x86-interrupt" fn(&mut InterruptStackFrame, code: PageFaultErrorCode);
+
+/// 不使用调用约定版本
+#[cfg(feature = "call")]
+pub type InterruptFunc = unsafe extern fn();
 
 /// IDT段属性
 #[repr(transparent)]
@@ -166,6 +174,10 @@ impl<F> Entry<F> {
             handler_func: PhantomData,
         }
     }
+    /// 获取注册的函数地址
+    pub fn handler_fn_ptr(&self) -> u64 {
+        (self.pointer_high as u64) << 32 | (self.pointer_middle as u64) << 16 | self.pointer_low as u64
+    }
 
     /// 用于注册异常处理函数
     #[cfg(target_arch = "x86_64")]
@@ -184,12 +196,13 @@ impl<F> Entry<F> {
         &mut self.options
     }
 
-    pub fn set_flags(&mut self,flags:IdtFlags){
+    pub fn set_flags(&mut self, flags: IdtFlags) {
         self.options = EntryOptions(flags.bits());
     }
 }
 
 
+#[cfg(not(feature = "call"))]
 #[cfg(target_arch = "x86_64")]
 impl Entry<HandlerFunc> {
     /// 用于注册异常处理函数，无错误码
@@ -198,6 +211,7 @@ impl Entry<HandlerFunc> {
     }
 }
 
+#[cfg(not(feature = "call"))]
 #[cfg(target_arch = "x86_64")]
 impl Entry<HandlerFuncWithErrCode> {
     /// 用于注册异常处理函数，含错误码
@@ -206,10 +220,20 @@ impl Entry<HandlerFuncWithErrCode> {
     }
 }
 
+#[cfg(not(feature = "call"))]
 #[cfg(target_arch = "x86_64")]
 impl Entry<PageFaultHandlerFunc> {
     /// 用于注册异常处理函数，含页异常错误码
     pub fn set_handler_fn(&mut self, handler: PageFaultHandlerFunc) -> &mut EntryOptions {
+        self.set_handler_addr(handler as u64)
+    }
+}
+
+#[cfg(feature = "call")]
+#[cfg(target_arch = "x86_64")]
+impl Entry<InterruptFunc> {
+    /// 用于注册异常处理函数
+    pub fn set_handler_fn(&mut self, handler: InterruptFunc) -> &mut EntryOptions {
         self.set_handler_addr(handler as u64)
     }
 }
@@ -219,6 +243,7 @@ impl Entry<PageFaultHandlerFunc> {
 #[derive(Clone)]
 #[repr(C)]
 #[repr(align(16))]
+#[cfg(not(feature = "call"))]
 pub struct InterruptDescriptorTable {
     /// #DE
     pub divide_by_zero: Entry<HandlerFunc>,
@@ -268,6 +293,61 @@ pub struct InterruptDescriptorTable {
     reserved_3: Entry<HandlerFunc>,
     /// 用户自定义中断
     interrupts: [Entry<HandlerFunc>; 256 - 32],
+}
+
+#[derive(Clone)]
+#[repr(C)]
+#[repr(align(16))]
+#[cfg(feature = "call")]
+pub struct InterruptDescriptorTable {
+    /// #DE
+    pub divide_by_zero: Entry<InterruptFunc>,
+    /// #DB
+    pub debug: Entry<InterruptFunc>,
+    /// NMI 中断
+    pub non_maskable_interrupt: Entry<InterruptFunc>,
+    /// #BP
+    pub breakpoint: Entry<InterruptFunc>,
+    /// #OF
+    pub overflow: Entry<InterruptFunc>,
+    /// #BR
+    pub bound_range_exceeded: Entry<InterruptFunc>,
+    /// #UD
+    pub invalid_opcode: Entry<InterruptFunc>,
+    /// #NM
+    pub device_not_available: Entry<InterruptFunc>,
+    /// #DF
+    pub double_fault: Entry<InterruptFunc>,
+    /// 协处理器段溢出
+    coprocessor_segment_overrun: Entry<InterruptFunc>,
+    /// #TS
+    pub invalid_tss: Entry<InterruptFunc>,
+    /// #NP
+    pub segment_not_present: Entry<InterruptFunc>,
+    /// #SS
+    pub stack_segment_fault: Entry<InterruptFunc>,
+    /// #GP
+    pub general_protection_fault: Entry<InterruptFunc>,
+    /// #PF
+    pub page_fault: Entry<InterruptFunc>,
+    /// 保留
+    reserved_1: Entry<InterruptFunc>,
+    /// #MF
+    pub x87_floating_point: Entry<InterruptFunc>,
+    /// #AC
+    pub alignment_check: Entry<InterruptFunc>,
+    /// #MC
+    pub machine_check: Entry<InterruptFunc>,
+    /// #XM
+    pub simd_floating_point: Entry<InterruptFunc>,
+    /// #VE
+    pub virtualization: Entry<InterruptFunc>,
+    /// 22-31 Intel保留使用
+    reserved_2: [Entry<InterruptFunc>; 9],
+    pub security_exception: Entry<InterruptFunc>,
+    reserved_3: Entry<InterruptFunc>,
+    /// 用户自定义中断
+    interrupts: [Entry<InterruptFunc>; 256 - 32],
 }
 
 impl InterruptDescriptorTable {
@@ -345,9 +425,38 @@ impl InterruptDescriptorTable {
     }
 }
 
-
+#[cfg(not(feature = "call"))]
 impl Index<usize> for InterruptDescriptorTable {
     type Output = Entry<HandlerFunc>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.divide_by_zero,
+            1 => &self.debug,
+            2 => &self.non_maskable_interrupt,
+            3 => &self.breakpoint,
+            4 => &self.overflow,
+            5 => &self.bound_range_exceeded,
+            6 => &self.invalid_opcode,
+            7 => &self.device_not_available,
+            9 => &self.coprocessor_segment_overrun,
+            16 => &self.x87_floating_point,
+            18 => &self.machine_check,
+            19 => &self.simd_floating_point,
+            20 => &self.virtualization,
+            i @ 32..=255 => &self.interrupts[i - 32],
+            i @ 15 | i @ 31 | i @ 22..=29 => panic!("entry {} is reserved", i),
+            i @ 8 | i @ 10..=14 | i @ 17 | i @ 30 => {
+                panic!("entry {} is an exception with error code", i)
+            }
+            i => panic!("no entry with index {}", i),
+        }
+    }
+}
+
+#[cfg(feature = "call")]
+impl Index<usize> for InterruptDescriptorTable {
+    type Output = Entry<InterruptFunc>;
 
     fn index(&self, index: usize) -> &Self::Output {
         match index {

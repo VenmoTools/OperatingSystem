@@ -1,4 +1,4 @@
-use crate::println;
+use crate::alloc::string::String;
 
 #[allow(dead_code)]
 #[repr(packed)]
@@ -15,19 +15,12 @@ pub struct ScratchRegisters {
 }
 
 impl ScratchRegisters {
-    pub fn dump(&self) {
-        println!("RAX:   {:>016X}", { self.rax });
-        println!("RCX:   {:>016X}", { self.rcx });
-        println!("RDX:   {:>016X}", { self.rdx });
-        println!("RDI:   {:>016X}", { self.rdi });
-        println!("RSI:   {:>016X}", { self.rsi });
-        println!("R8:    {:>016X}", { self.r8 });
-        println!("R9:    {:>016X}", { self.r9 });
-        println!("R10:   {:>016X}", { self.r10 });
-        println!("R11:   {:>016X}", { self.r11 });
+    pub fn dump(&self) -> String {
+        format!("[ScratchRegisters] RAX:{} RCX:{} RDX:{} RDI:{} RSI:{} R8:{} R9:{} R10:{} R11:{}\n", {self.rax}, {self.rcx}, {self.rdx}, {self.rdi}, {self.rsi}, {self.r8},{ self.r9},{ self.r10},{ self.r11})
     }
 }
 
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! push_scratch {
     () => (asm!(
@@ -43,6 +36,7 @@ macro_rules! push_scratch {
         : : : : "intel", "volatile"
     ));
 }
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! pop_scratch {
     () => (asm!(
@@ -71,16 +65,13 @@ pub struct PreservedRegisters {
 }
 
 impl PreservedRegisters {
-    pub fn dump(&self) {
-        println!("RBX:   {:>016X}", { self.rbx });
-        println!("RBP:   {:>016X}", { self.rbp });
-        println!("R12:   {:>016X}", { self.r12 });
-        println!("R13:   {:>016X}", { self.r13 });
-        println!("R14:   {:>016X}", { self.r14 });
-        println!("R15:   {:>016X}", { self.r15 });
+    /// https://github.com/rust-lang/rust/issues/46043
+    pub fn dump(&self) -> String {
+        format!("[PreservedRegisters] r15:{},r14:{},r13:{},r12:{},rbp:{},rbx:{}\n", {self.r15}, {self.r14}, {self.r13},{ self.r12}, {self.rbp}, {self.rbx})
     }
 }
 
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! push_preserved {
     () => {
@@ -95,6 +86,7 @@ macro_rules! push_preserved {
             )
     };
 }
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! pop_preserved {
     () => {
@@ -121,15 +113,23 @@ pub struct IretRegisters {
 }
 
 impl IretRegisters {
+    /// https://github.com/rust-lang/rust/issues/46043
+    pub fn dump(&self) -> String {
+        format!("[IretRegister]: rip:{},cs:{},rflags:{},rsp:{},ss:{}\n", {self.rip}, {self.cs}, {self.rflags}, {self.rsp}, {self.ss})
+    }
+}
+
+impl IretRegisters {
     pub fn iret() {
         unsafe {
             asm!(
-                "iretq"
-                : : : : "intel", "volatile"
-            )
+    "iretq"
+    : : : : "intel", "volatile"
+    )
         }
     }
 }
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! iret {
     () => {
@@ -139,6 +139,7 @@ macro_rules! iret {
         )
     };
 }
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! push_fs {
     () => {
@@ -150,6 +151,7 @@ macro_rules! push_fs {
     )
     };
 }
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! pop_fs {
     () => {
@@ -159,6 +161,17 @@ macro_rules! pop_fs {
     )
     };
 }
+#[macro_export]
+#[allow(unused_macros)]
+macro_rules! cld {
+    () => {
+    asm!(
+        "cld"
+        ::::"intel","volatile"
+    )
+    };
+}
+
 
 #[repr(packed)]
 pub struct InterruptStack {
@@ -168,11 +181,18 @@ pub struct InterruptStack {
     pub iret: IretRegisters,
 }
 
+impl InterruptStack {
+    /// https://github.com/rust-lang/rust/issues/46043
+    pub fn dump(&self) -> String {
+        format!("[FS] {} \n{} {} {}", {self.fs}, self.preserved.dump(), self.scratch.dump(), self.iret.dump())
+    }
+}
+
 #[macro_export]
 macro_rules! interrupt {
     ($name:ident,$func:block) => {
         #[naked]
-        pub unsafe extern fn $name(){
+        pub unsafe extern "C" fn $name(){
             #[inline(never)]
             unsafe fn inner(){
                 $func
@@ -180,11 +200,11 @@ macro_rules! interrupt {
             // 保存scratch寄存器中数据
             scratch_push!();
             // 保存fs寄存器
-            fs_push!();
-
+            // fs_push!();
+            cld!();
             inner();
 
-            fs_pop!();
+            // fs_pop!();
             scratch_pop!();
             iret!();
         }
@@ -193,26 +213,27 @@ macro_rules! interrupt {
 }
 #[macro_export]
 macro_rules! interrupt_frame {
-    ($name:ident,$func:block) => {
+    ($name:ident,$stack:ident,$func:block) => {
         #[naked]
-        pub unsafe extern fn $name(){
+        pub unsafe extern "C" fn $name(){
             #[inline(never)]
-            unsafe fn inner(stack: &mut $crate::ia_32e::call_convention::InterruptStack){
+            unsafe fn inner($stack: &mut $crate::ia_32e::call_convention::InterruptStack){
                 $func
             }
 
-            push_scratch!();
-            push_preserved!();
-            push_fs!();
+            $crate::push_scratch!();
+            $crate::push_preserved!();
+            // $crate::push_fs!();
+             $crate::cld!();
 
-            let rsp = 0_usize;
-            asm!("" : "={rsp}"(rsp) : : : "intel", "volatile");
+            let mut rsp = 0_usize;
+            asm!("mov $0,rsp" : "=r"(rsp) : : : "intel", "volatile");
             inner(&mut *(rsp as *mut $crate::ia_32e::call_convention::InterruptStack));
 
-            pop_fs!();
-            pop_preserved!();
-            pop_scratch!();
-            iret!();
+            // $crate::pop_fs!();
+            $crate::pop_preserved!();
+            $crate::pop_scratch!();
+            $crate::iret!();
         }
     };
 }

@@ -5,6 +5,7 @@ use crate::ia_32e::PhysAddr;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+#[derive(Debug)]
 pub enum TranslationResult {
     Frame4KB {
         frame: Frame<Page4KB>,
@@ -20,6 +21,15 @@ pub enum TranslationResult {
     },
     PageNotMapped,
     InvalidFrameAddress(PhysAddr),
+}
+
+impl TranslationResult{
+    pub fn is_ok(&self) -> bool{
+        match self{
+            TranslationResult::PageNotMapped| TranslationResult::InvalidFrameAddress(_) => false,
+            _ => true
+        }
+    }
 }
 
 

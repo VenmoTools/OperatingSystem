@@ -76,6 +76,8 @@ pub fn run_qemu(path: &Path) {
             "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
             "-debugcon", "file:debug.log",
             "-s",
+            "-d","cpu_reset",
+            "-D","kernel/qemu.log"
 //            "-S"
 //            "-global", "isa-debugcon.iobase=0x402"
         ])
