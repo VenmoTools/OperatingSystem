@@ -18,6 +18,7 @@ use uefi::table::{Runtime, SystemTable};
 use uefi::table::boot::MemoryMapIter;
 
 use kernel::{Initializer, loop_hlt};
+use kernel::async_process::{Executor, Task};
 
 fn get_mem_iter(args: &KernelArgs) -> &mut MemoryMapIter {
     unsafe { &mut *(args.iter as *mut MemoryMapIter) }
@@ -56,8 +57,21 @@ fn functional_test(args: &KernelArgs) {
     // test use uefi runtime service
     let rt = get_system_table(args);
     println!("{:?}", unsafe { rt.runtime_services().get_time().log_warning().unwrap() });
+    // test async
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(task()));
+    executor.run();
     // test interrupt work
     int3();
+}
+
+async fn number() -> u32 {
+    42
+}
+
+async fn task() {
+    let number = number().await;
+    println!("{}", number);
 }
 
 pub fn frame_to_pt(f: Frame) -> *mut PageTable {

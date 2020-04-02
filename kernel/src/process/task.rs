@@ -1,5 +1,6 @@
 use ::core::sync::atomic::AtomicUsize;
 use alloc::boxed::Box;
+use core::sync::atomic::Ordering;
 
 use spin::Mutex;
 
@@ -50,6 +51,12 @@ impl AtomicProcessId {
             container: AtomicUsize::new(id.into())
         }
     }
+
+    #[allow(dead_code)]
+    pub fn increment(&self) -> ProcessId {
+        ProcessId::from(self.container.fetch_add(1, Ordering::Relaxed))
+    }
+
     #[allow(dead_code)]
     pub const fn default() -> Self {
         Self::new(ProcessId::from(0))

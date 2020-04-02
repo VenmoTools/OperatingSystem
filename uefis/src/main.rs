@@ -1,12 +1,10 @@
 #![no_std]
 #![no_main]
 #![feature(asm)]
-#![feature(slice_patterns)]
 #![feature(abi_efiapi)]
 #![feature(never_type)]
 #![feature(fn_traits)]
 #![allow(dead_code)]
-#![feature(slice_from_raw_parts)]
 
 #[macro_use]
 extern crate alloc;

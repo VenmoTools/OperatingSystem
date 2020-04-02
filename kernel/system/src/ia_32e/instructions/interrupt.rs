@@ -39,6 +39,14 @@ pub fn hlt() {
     }
 }
 
+/// Atomically enable interrupts and put the CPU to sleep
+#[inline]
+pub fn enable_interrupt_and_hlt(){
+    unsafe{
+        asm!("sti;hlt"::::"volatile")
+    }
+}
+
 /// 返回是否启用中断。
 pub fn are_enabled() -> bool {
     use crate::bits::RFlags;

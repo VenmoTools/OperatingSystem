@@ -9,7 +9,7 @@ edition = "2018"
 
 
 [dependencies.uefi]
-version="0.4.3"
+version="0.4.4"
 features = ['exts']
 
 [dependencies.uefi-services]

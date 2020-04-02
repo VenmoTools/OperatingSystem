@@ -7,6 +7,7 @@
 #![feature(asm)]
 #![deny(warnings)]
 #![feature(naked_functions)]
+#![feature(wake_trait)]
 
 #[macro_use]
 pub extern crate alloc;
@@ -32,6 +33,7 @@ pub mod paging;
 pub mod serial;
 pub mod memory;
 pub mod apic;
+pub mod async_process;
 
 #[global_allocator]
 pub static HEAP: LockedHeap = LockedHeap::empty();
