@@ -2,17 +2,17 @@
 
 /// 开启中断，已经使用unsafe包裹
 #[inline]
-pub fn enable() {
+pub fn enable_interrupt() {
     unsafe {
-        asm!("sti" :::: "volatile");
+        llvm_asm!("sti" :::: "volatile");
     }
 }
 
 /// 屏蔽中断，已经使用unsafe包裹
 #[inline]
-pub fn disable() {
+pub fn disable_interrupt() {
     unsafe {
-        asm!("cli" :::: "volatile");
+        llvm_asm!("cli" :::: "volatile");
     }
 }
 
@@ -20,7 +20,7 @@ pub fn disable() {
 #[inline]
 pub fn int3() {
     unsafe {
-        asm!("int3" :::: "volatile");
+        llvm_asm!("int3" :::: "volatile");
     }
 }
 
@@ -28,14 +28,14 @@ pub fn int3() {
 #[inline]
 pub fn int_n(n: u32) {
     unsafe {
-        asm!("int $0" :: "N" (n) :: "volatile");
+        llvm_asm!("int $0" :: "N" (n) :: "volatile");
     }
 }
 /// 暂停CPU，直到下一个中断到达。
 #[inline]
 pub fn hlt() {
     unsafe {
-        asm!("hlt" :::: "volatile");
+        llvm_asm!("hlt" :::: "volatile");
     }
 }
 
@@ -43,7 +43,7 @@ pub fn hlt() {
 #[inline]
 pub fn enable_interrupt_and_hlt(){
     unsafe{
-        asm!("sti;hlt"::::"volatile")
+        llvm_asm!("sti;hlt"::::"volatile")
     }
 }
 
@@ -83,7 +83,7 @@ pub fn without_interrupts<F, R>(f: F) -> R
 
     // if interrupts are enabled, disable them for now
     if saved_intpt_flag {
-        disable();
+        disable_interrupt();
     }
 
     // do `f` while interrupts are disabled
@@ -91,7 +91,7 @@ pub fn without_interrupts<F, R>(f: F) -> R
 
     // re-enable interrupts if they were previously enabled
     if saved_intpt_flag {
-        enable();
+        enable_interrupt();
     }
 
     // return the result of `f` to the caller

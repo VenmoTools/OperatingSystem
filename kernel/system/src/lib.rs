@@ -6,7 +6,10 @@
 #![feature(abi_x86_interrupt)]
 #![feature(core_intrinsics)]
 #![feature(naked_functions)]
-
+#![feature(ptr_internals)]
+#![feature(llvm_asm)]
+#![feature(allocator_api)]
+#![allow(unused_doc_comments)]
 #[macro_use]
 extern crate alloc;
 
@@ -21,6 +24,7 @@ pub mod devices;
 pub mod macros;
 #[macro_use]
 pub mod console;
+pub mod buddy_system_allocator;
 
 #[repr(C)]
 #[derive(Debug)]

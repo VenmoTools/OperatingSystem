@@ -14,11 +14,23 @@ bitflags! {
     }
 }
 
+bitflags! {
+    /// Redirection table entry flags.
+    pub struct IrqFlags: u32 {
+        /// Level-triggered interrupt (vs edge-triggered)
+        const LEVEL_TRIGGERED = 0x0000_8000;
+        /// Low-polarity interrupt signal (vs high-polarity)
+        const LOW_ACTIVE = 0x0000_2000;
+        /// Logical destination mode (vs physical)
+        const LOGICAL_DEST = 0x0000_0800;
+    }
+}
 
-bitflags!{
-    pub struct ESRFlags: u32{
+
+bitflags! {
+    pub struct LocalAPICFlags: u8{
         /// 发送校验和错误 LocalAPIC检测到发往APIC总线的中断消息出现校验和错误
-        const SEND_CHECKSUM_ERROR = 1<<0;
+        const SEND_CHECKSUM_ERROR = 1 << 0;
         /// 接受校验和错误 LocalAPIC检测到来自APIC总线的中断消息出现校验和错误
         const RECV_CHECKSUM_ERROR = 1 << 1;
         /// 发送中断消息受理错误   LocalAPIC检测到发往APIC总线的中断消息未被其他APIC受理
@@ -33,16 +45,6 @@ bitflags!{
         const RECV_INTERRUPT_VECOTR_INVALID = 1 << 6;
         /// 寄存器地址不合法 Local APIC处于xAPIC模式下，软件访问了Local APIC寄存器地址空间
         const REGISTER_ADDRESS_INVALID = 1 << 7;
-    }
-}
-
-bitflags! {
-    pub struct LocalAPICFlags:u32{
-        /// 指示处理器是否为引导处理器
-        const BSP = 1 << 8;
-        /// 开启或关闭Local APIC
-        const APIC_GLOBAL_ENABLE = 1 << 11;
-        // 上电或重置后，该APIC Base field设置为FEE0 0000H
     }
 }
 

@@ -1,3 +1,4 @@
+use core::alloc::Layout;
 use core::ops::{Deref, DerefMut};
 
 use super::frame::Frame;
@@ -9,6 +10,14 @@ pub unsafe trait FrameAllocator<S: PageSize> {
     fn alloc(&mut self) -> Option<UnusedFrame<S>>;
     /// 释放一个物理帧
     fn dealloc(&mut self, frame: UnusedFrame<S>);
+    /// 空闲的帧数
+    fn free_frames(&self) -> usize;
+    /// 已使用的帧数
+    fn used_frames(&self) -> usize;
+    // 分配指定数量的物理帧
+    fn alloc_size(&mut self, size: Layout) -> Option<UnusedFrame<S>>;
+    /// 释放指定数量物理帧
+    fn dealloc_size(&mut self, frame: Frame, count: usize);
 }
 
 #[derive(Debug)]

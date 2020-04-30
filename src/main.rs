@@ -1,17 +1,18 @@
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::{Path, };
+use std::path::Path;
 use std::process::{Command, exit, ExitStatus, Stdio};
 
 fn main() -> std::io::Result<()> {
     let work_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     // 1. build kernel
-    check_status(kernel_build_step(work_dir)?);
+    // check_status(kernel_build_step(work_dir)?);
     // 2. build efi file
-    check_status(efi_build_step(work_dir)?);
+    // check_status(efi_build_step(work_dir)?);
     // 3. copy file
-    copy_file(work_dir)?;
+    // copy_file(work_dir)?;
+
     run_qemu(work_dir);
     Ok(())
 }
@@ -67,7 +68,7 @@ pub fn run_qemu(path: &Path) {
     let p_code = format!("if=pflash,format=raw,file={},readonly=on", path.join("OVMF_CODE.fd").to_str().unwrap());
     let p_vars = format!("if=pflash,format=raw,file={},readonly=on", path.join("OVMF_VARS.fd").to_str().unwrap());
     let p_esp = format!("format=raw,file=fat:rw:{}", path.join("target\\debug\\esp").to_str().unwrap());
-    let process = Command::new("qemu-system-x86_64.exe").stdout(Stdio::piped())
+    let process = Command::new("qemu-system-x86_64w.exe").stdout(Stdio::piped())
         .args(&[
             "-drive", p_code.as_str(),
             "-drive", p_vars.as_str(),
@@ -76,8 +77,9 @@ pub fn run_qemu(path: &Path) {
             "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
             "-debugcon", "file:debug.log",
             "-s",
-            "-d","cpu_reset",
-            "-D","kernel/qemu.log"
+            "-d", "cpu_reset",
+            "-D", "kernel/qemu.log",
+            "-cpu", "Broadwell",
 //            "-S"
 //            "-global", "isa-debugcon.iobase=0x402"
         ])

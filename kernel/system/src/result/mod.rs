@@ -1,4 +1,5 @@
-pub use error::mem::{MemoryError, MemErrorKind};
+use bitflags::_core::alloc::AllocErr;
+pub use error::mem::{MemErrorKind, MemoryError};
 
 use crate::alloc::string::String;
 
@@ -17,7 +18,8 @@ pub struct Error {
 
 #[derive(Debug, Copy, Clone)]
 pub enum ProcessErrorKind {
-    TryAgain
+    TryAgain,
+    CrateNewProcessFailed,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -82,9 +84,16 @@ impl ProcessError {
         Self {
             msg,
             no: match kind {
-                ProcessErrorKind::TryAgain => 11
+                ProcessErrorKind::TryAgain => 11,
+                ProcessErrorKind::CrateNewProcessFailed => 12
             },
         }
     }
 }
 
+
+impl From<AllocErr> for Error {
+    fn from(_: AllocErr) -> Self {
+        Error::new_memory(MemErrorKind::AllocateFiled, String::from("memory allocation failed"))
+    }
+}

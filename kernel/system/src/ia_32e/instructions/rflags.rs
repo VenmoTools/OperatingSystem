@@ -4,7 +4,7 @@ use crate::bits::RFlags;
 pub fn read() -> u64 {
     let mut r = 0_u64;
     unsafe {
-        asm!("pushfq; popq $0" : "=r"(r) ::"memory")
+        llvm_asm!("pushfq; popq $0" : "=r"(r) ::"memory")
     };
     r
 }
@@ -14,7 +14,7 @@ pub fn read_flags() -> RFlags {
 }
 /// 写入REFLAGS寄存器原始数据
 pub fn write(val: u64) {
-    unsafe { asm!("pushq $0; popfq" :: "r"(val) : "memory" "flags") };
+    unsafe { llvm_asm!("pushq $0; popfq" :: "r"(val) : "memory" "flags") };
 }
 /// 写入REFLAGS寄存器
 pub fn write_flags(flags: RFlags) {

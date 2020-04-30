@@ -1,7 +1,7 @@
 use crate::ia_32e::instructions::register::wrmsr2;
 
 unsafe fn enable_local_apic() {
-    asm!(
+    llvm_asm!(
     "movq $0x1b ,%rax;\
      rdmsr;\
      bts $10,%rax;\

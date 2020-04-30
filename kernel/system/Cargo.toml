@@ -16,6 +16,15 @@ version = "7.0.3"
 [dependencies.bitflags]
 version = "1.2.1"
 
+[dependencies.lazy_static]
+version = "1.0"
+features = ["spin_no_std"]
+
+
+[dependencies]
+paste = "0.1.5"
+bit = "0.1.1"
+multiboot2 = "0.8.2"
 
 [features]
 default=[]

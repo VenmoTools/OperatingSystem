@@ -1,11 +1,10 @@
 use core::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
-
 use crossbeam_queue::ArrayQueue;
 
 use crate::alloc::collections::{BTreeMap, VecDeque};
 use crate::alloc::sync::Arc;
 use crate::alloc::task::Wake;
-use crate::process::task::ProcessId;
+use crate::process::types::ProcessId;
 
 use super::task::Task;
 
@@ -77,7 +76,7 @@ impl Executor {
     }
 
     fn sleep_if_idle(&self) {
-        use system::ia_32e::instructions::interrupt::{enable_interrupt_and_hlt, enable};
+        use system::ia_32e::instructions::interrupt::{enable_interrupt_and_hlt, enable_interrupt};
 
         if !self.wake_queue.is_empty() {
             return;
@@ -86,7 +85,7 @@ impl Executor {
         if self.wake_queue.is_empty() {
             enable_interrupt_and_hlt();
         } else {
-            enable();
+            enable_interrupt();
         }
     }
 }

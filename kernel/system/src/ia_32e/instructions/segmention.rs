@@ -7,7 +7,7 @@ use crate::ia_32e::descriptor::SegmentSelector;
 pub unsafe fn set_cs(selector: SegmentSelector) {
     #[inline(always)]
     unsafe fn inner(selector: SegmentSelector) {
-        asm!(
+        llvm_asm!(
             "pushq $0;\
             leaq 1f(%rip), %rax;\
             pushq %rax;\
@@ -23,7 +23,7 @@ pub unsafe fn set_cs(selector: SegmentSelector) {
 
 /// 加载ss段选择子
 pub unsafe fn load_ss(selector:SegmentSelector){
-    asm!(
+    llvm_asm!(
         "movw $0, %ss"
         :
         : "r"(selector.0)
@@ -33,7 +33,7 @@ pub unsafe fn load_ss(selector:SegmentSelector){
 
 /// 加载ds段选择子
 pub unsafe fn load_ds(selector:SegmentSelector){
-    asm!(
+    llvm_asm!(
         "movw $0,%ds"
         :
         :"r"(selector.0)
@@ -42,7 +42,7 @@ pub unsafe fn load_ds(selector:SegmentSelector){
 }
 /// 加载es段选择子
 pub unsafe fn load_es(selector:SegmentSelector){
-    asm!(
+    llvm_asm!(
         "movw $0,%es"
         :
         :"r"(selector.0)
@@ -51,7 +51,7 @@ pub unsafe fn load_es(selector:SegmentSelector){
 }
 /// 加载fs段选择子
 pub unsafe fn load_fs(selector:SegmentSelector){
-    asm!(
+    llvm_asm!(
         "movw $0, %fs"
         :
         :"r"(selector.0)
@@ -60,7 +60,7 @@ pub unsafe fn load_fs(selector:SegmentSelector){
 }
 /// 加载gs段选择子
 pub unsafe fn load_gs(selector:SegmentSelector){
-    asm!(
+    llvm_asm!(
         "movw $0, %gs"
         :
         :"r"(selector.0)
@@ -69,7 +69,7 @@ pub unsafe fn load_gs(selector:SegmentSelector){
 }
 /// swapgs指令
 pub unsafe fn swap_gs(){
-    asm!(
+    llvm_asm!(
         "swapgs"
         :
         :
@@ -88,7 +88,7 @@ pub fn cs() -> SegmentSelector{
     let mut segment:u16 = 0;
 
     unsafe{
-        asm!(
+        llvm_asm!(
             "mov %cs, $0"
             :"=r"(segment)
         );

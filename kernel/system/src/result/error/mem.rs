@@ -1,4 +1,5 @@
 use core::fmt;
+
 use crate::alloc::string::String;
 
 #[derive(Debug)]
@@ -13,6 +14,7 @@ impl fmt::Display for MemoryError {
             MemErrorKind::NotAligned => write!(f, "{}", self.msg),
             MemErrorKind::PageTableIndexNotMatch => write!(f, "{}", self.msg),
             MemErrorKind::FrameNotMatch => write!(f, "{}", self.msg),
+            MemErrorKind::AllocateFiled => write!(f, "{}", self.msg),
         }
     }
 }
@@ -28,4 +30,5 @@ pub enum MemErrorKind {
     NotAligned,
     PageTableIndexNotMatch,
     FrameNotMatch,
+    AllocateFiled,
 }

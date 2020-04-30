@@ -1,8 +1,7 @@
 use crate::bits::EferFlags;
+use crate::bits::flags::LocalAPICFlags;
 use crate::ia_32e::instructions::register::{rdmsr, wrmsr};
 use crate::ia_32e::VirtAddr;
-use crate::bits::flags::ESRFlags;
-
 
 #[derive(Debug)]
 pub struct MSR(u32);
@@ -138,8 +137,8 @@ impl ESR {
 
     pub unsafe fn write() {}
 
-    pub fn flags(&self) -> ESRFlags {
-        ESRFlags::from_bits_truncate(self.0)
+    pub fn flags(&self) -> LocalAPICFlags {
+        LocalAPICFlags::from_bits_truncate(self.0 as u8)
     }
 }
 

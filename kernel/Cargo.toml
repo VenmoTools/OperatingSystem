@@ -1,56 +1,45 @@
 [package]
 name = "kernel"
-version = "0.2.0"
+version = "0.1.0"
 authors = ["venmosnake <VenmoSnake@yeah.net>"]
 edition = "2018"
 
-#[target.x86_64-unknown-none]
-#rustflags = [
-#    "-C", "link-arg=-T ./linker.ld",
-#]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
 
 
 [dependencies]
-# 避免编译器错误的优化
+multiboot2 = "0.8.2"
+uart_16550 = "0.2.5"
+pc-keyboard = "0.5.0"
 volatile = "0.2.6"
-# 互斥锁
 spin = "0.5.2"
-# 初始化UART，并通过串行端口发送数据
-uart_16550 = "0.2.0"
-# 键盘键位映射
-pc-keyboard = "0.3.1"
-[dependencies.raw-cpuid]
-version = "7.0.3"
+raw-cpuid = "7.0.3"
+buddy_system_allocator="0.4.0"
+bitflags = "1.2.1"
 
 [dependencies.system]
 path="system/"
 version="0.3.0"
 features=["call"]
 
-[dependencies.buddy_system_allocator]
-version="0.3.8"
-
-# 惰性初始化的宏
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
 
-[dependencies.uefi]
-version="0.4.4"
-features = ['exts']
-
-
-[dependencies.futures-util]
-version="0.3.4"
-default-features=false
-features=["alloc"]
-
-[dependencies.crossbeam-queue]
-version="0.2.1"
-default-features=false
-features=["alloc"]
+[lib]
+name="rslib"
+crate-type=["staticlib"]
 
 [features]
-default=["efi"]
-efi=[]
-bios=[]
+default=["pic","mutiboot"]
+xapic=[]
+x2apic=[]
+pic=[]
+mutiboot=[]
+uefi=[]

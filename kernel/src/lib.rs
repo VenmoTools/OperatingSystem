@@ -1,128 +1,67 @@
 #![no_std]
-#![allow(dead_code)]
-#![feature(exclusive_range_pattern)]
-#![feature(abi_efiapi)]
+#![feature(llvm_asm)]
 #![feature(alloc_error_handler)]
-#![feature(abi_x86_interrupt)]
-#![feature(asm)]
-#![deny(warnings)]
 #![feature(naked_functions)]
+#![allow(dead_code)]
+#![feature(core_intrinsics)]
+#![feature(thread_local)]
 #![feature(wake_trait)]
+// #![deny(warnings)]
 
 #[macro_use]
-pub extern crate alloc;
+extern crate alloc;
+extern crate multiboot2;
+// #[macro_use]
+extern crate system;
 
-use core::alloc::Layout;
 use core::panic::PanicInfo;
-
-use buddy_system_allocator::LockedHeap;
-use system::ia_32e::instructions::interrupt::enable;
 use system::KernelArgs;
-use uefi::table::boot::MemoryMapIter;
 
-#[cfg(feature = "bios")]
-pub mod bios;
-#[cfg(feature = "efi")]
-pub mod efis;
+use crate::initializer::Initializer;
+use crate::utils::loop_hlt;
 
-#[cfg(feature = "efi")]
-pub mod graphic;
-pub mod process;
-pub mod paging;
 #[macro_use]
-pub mod serial;
-pub mod memory;
-pub mod apic;
-pub mod async_process;
+mod serial;
+mod memory;
+mod descriptor;
+mod initializer;
+mod utils;
+mod context_switch;
+mod process;
+mod async_process;
 
-#[global_allocator]
-pub static HEAP: LockedHeap = LockedHeap::empty();
+#[cfg(feature = "uefi")]
+#[no_mangle]
+extern "C" fn kmain(info_addr: usize) -> ! {
+    println!("uefi entry");
+    let args = unsafe { &*((args) as *const KernelArgs) };
+    let iter = get_mem_iter(args);
+    loop_hlt()
+}
 
-
-#[alloc_error_handler]
-fn handler(layout: Layout) -> ! {
-    println!("allocate memory Error: align={} ,size={}", layout.align(), layout.size());
+#[cfg(feature = "mutiboot")]
+#[no_mangle]
+extern "C" fn kmain(info_addr: usize) -> ! {
+    println!("entry kernel");
+    let boot = unsafe { multiboot2::load(info_addr) };
+    Initializer::new(&boot).initialize();
     loop_hlt()
 }
 
 
-pub fn init_heap(heap_start: usize, heap_end: usize) {
-    let size = heap_end - heap_start;
-    unsafe {
-        HEAP.lock().init(heap_start, size)
-    }
-}
-
-
-pub struct Initializer<'a> {
-    #[cfg(feature = "efi")]
-    args: &'a KernelArgs,
-    #[cfg(feature = "efi")]
-    iter: &'a MemoryMapIter<'a>,
-}
-
-#[cfg(feature = "bios")]
-impl Initializer {
-    #[cfg(feature = "bios")]
-    pub fn initialize_all() {
-        // 初始化gdt
-        bios::descriptor::init_gdt();
-        // 初始化idt
-        bios::descriptor::init_idt();
-        // 初始化pics
-        bios::descriptor::init_pics();
-
-        // 初始化内存管理
-
-        // 开启分页
-
-        // 开启中断
-        system::ia_32e::instructions::interrupt::enable();
-    }
-}
-
-#[cfg(feature = "efi")]
-impl<'a> Initializer<'a> {
-    #[cfg(feature = "efi")]
-    pub fn new(args: &'a KernelArgs, iter: &'a MemoryMapIter<'a>) -> Self {
-        Self {
-            args,
-            iter,
-        }
-    }
-    #[cfg(feature = "efi")]
-    pub fn initialize_all(&self) {
-        // BUG! gdt
-        // efis::descriptor::init_gdt_and_tss();
-        // 初始化idt
-        efis::descriptor::init_idt();
-        // 初始化内存
-        init_heap(0x1400000, 0x3F36000);
-        enable();
-    }
-}
-
-
-pub fn loop_hlt() -> ! {
-    loop {
-        system::ia_32e::instructions::interrupt::hlt();
-    }
-}
-
-///////////////////////
-///// Panic Handler
-///////////////////////
-/// 用于运行过程中异常处理
-#[cfg(feature = "efi")]
 #[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
+pub fn panic_handler(info: &PanicInfo) -> ! {
     println!("{:?}", info);
     loop_hlt()
 }
 
-#[cfg(not(feature = "efi"))]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("Error: {}", info);
-    loop_hlt()
+#[cfg(feature = "uefi")]
+fn get_mem_iter(args: &KernelArgs) -> &mut MemoryMapIter {
+    unsafe { &mut *(args.iter as *mut MemoryMapIter) }
+}
+
+#[cfg(feature = "uefi")]
+#[allow(dead_code)]
+fn get_system_table(args: &KernelArgs) -> &SystemTable<Runtime> {
+    unsafe { &*(args.st as *const SystemTable<Runtime>) }
 }

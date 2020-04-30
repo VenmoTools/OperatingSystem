@@ -3,11 +3,12 @@ use core::pin::Pin;
 use core::task::{Context, Poll};
 
 use crate::alloc::boxed::Box;
-use crate::process::task::{AtomicProcessId, ProcessId};
+use crate::process::types::{AtomicProcessId, ProcessId};
 
 pub struct Task {
     pub id: ProcessId,
     future: Pin<Box<dyn Future<Output=()>>>,
+    pub counter: usize,
 }
 
 impl Task {
@@ -16,6 +17,7 @@ impl Task {
         Task {
             id: ID.increment(),
             future: Box::pin(future),
+            counter: 100,
         }
     }
 

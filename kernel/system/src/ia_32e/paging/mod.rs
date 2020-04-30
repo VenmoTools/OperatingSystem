@@ -1,11 +1,14 @@
+use alloc::vec::Vec;
 pub use allocator::{FrameAllocator, UnusedFrame};
 pub use frame::Frame;
-pub use page::{NotGiantPageSize, Page, Page1GB, Page2MB, Page4KB, PageSize,PageRange,PageRangeInclude};
+use lazy_static::lazy_static;
+pub use page::{NotGiantPageSize, Page, Page1GB, Page2MB, Page4KB, PageRange, PageRangeInclude, PageSize};
 pub use page_ops::{PageIndex, PageOffset};
 pub use page_table::{ENTRY_COUNT, PageTable, PageTableEntry};
 
 use crate::ia_32e::PhysAddr;
 
+// use crate::mutex::Mutex;
 ///! 提供了内存分页功能
 mod page;
 mod page_table;
@@ -14,6 +17,7 @@ pub mod frame;
 pub mod allocator;
 pub mod mapper;
 pub mod result;
+pub mod frame_allocator;
 
 pub struct PagingArgs {
     pub pml4t_base_addr: u64,
@@ -100,4 +104,105 @@ pub unsafe fn enable_4_level_paging(args: PagingArgs) {
         | CR0Flags::WRITE_PROTECT
         | CR0Flags::PROTECTED_MODE_ENABLE;
     CR0::write(cr0_flags);
+}
+
+lazy_static! {
+    pub static ref MEMORY_AREA:[MemoryArea; 512] = [MemoryArea::default();512];
+}
+
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum MemoryType {
+    EmptyArea,
+    FreeArea,
+    UsedArea,
+    ReservedArea,
+    ACPIArea,
+    ReservedHibernate,
+    Defective,
+}
+
+impl Default for MemoryType {
+    fn default() -> Self {
+        MemoryType::EmptyArea
+    }
+}
+
+
+/// memory map area
+#[derive(Copy, Clone, Debug, Default)]
+pub struct MemoryArea {
+    /// area start address
+    pub start_addr: u64,
+    pub end_addr: u64,
+    pub length: u64,
+    pub ty: MemoryType,
+    pub acpi: u32,
+}
+
+impl MemoryArea {
+    pub fn new(start_addr: u64, end_addr: u64, ty: MemoryType, len: u64) -> Self {
+        Self {
+            start_addr,
+            end_addr,
+            ty,
+            length: len,
+            acpi: 0,
+        }
+    }
+
+    pub fn size(&self) -> u64 {
+        self.length
+    }
+    pub fn start_address(&self) -> u64 {
+        self.start_addr
+    }
+}
+
+pub struct MemorySpace {
+    space: Vec<MemoryArea>,
+}
+
+impl MemorySpace {
+    pub fn new() -> Self {
+        Self {
+            space: Vec::new(),
+        }
+    }
+
+    pub fn add_area(&mut self, start_addr: u64, end_addr: u64, ty: MemoryType, len: u64) {
+        self.space.push(MemoryArea::new(start_addr, end_addr, ty, len))
+    }
+}
+
+/// 遍历指定类型的内存区域
+#[derive(Clone)]
+pub struct MemoryAreaIter {
+    ty: MemoryType,
+    index: usize,
+}
+
+impl MemoryAreaIter {
+    pub fn new(ty: MemoryType) -> Self {
+        Self {
+            ty,
+            index: 0,
+        }
+    }
+}
+
+impl Iterator for MemoryAreaIter {
+    type Item = &'static MemoryArea;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.index < MEMORY_AREA.len() {
+            let entry = &MEMORY_AREA[self.index];
+            self.index += 1;
+            if self.ty == entry.ty {
+                return Some(entry);
+            }
+        }
+        None
+    }
 }

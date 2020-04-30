@@ -1,13 +1,13 @@
-use crate::ia_32e::paging::frame::Frame;
-use crate::ia_32e::paging::{PageTable, PageTableEntry};
-use crate::ia_32e::paging::page::{Page4KB, Page, Page1GB, Page2MB};
-use crate::ia_32e::paging::result::{PageTableWalkError, CreatePageTableError, MapToError, UnmapError, FlagUpdateError, TranslateError, TranslationResult};
-use crate::ia_32e::paging::allocator::{FrameAllocator, UnusedFrame};
 use crate::bits::PageTableFlags;
-use crate::ia_32e::paging::mapper::{MapperFlush, Mapper, MapAllSize};
+use crate::ia_32e::cpu::control::CR3;
+use crate::ia_32e::paging::{PageTable, PageTableEntry};
+use crate::ia_32e::paging::allocator::{FrameAllocator, UnusedFrame};
+use crate::ia_32e::paging::frame::Frame;
+use crate::ia_32e::paging::mapper::{MapAllSize, Mapper, MapperFlush};
+use crate::ia_32e::paging::page::{Page, Page1GB, Page2MB, Page4KB};
+use crate::ia_32e::paging::result::{CreatePageTableError, FlagUpdateError, MapToError, PageTableWalkError, TranslateError, TranslationResult, UnmapError};
 use crate::ia_32e::paging::result::FrameError;
 use crate::ia_32e::VirtAddr;
-use crate::ia_32e::cpu::control::CR3;
 
 /// 将给定的物理帧转换为页表裸指针
 pub trait PhysicalToVirtual {
@@ -108,8 +108,8 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
     }
 
     // 根据给定的帧和页面进行1gb页面映射
-    fn map_to_1g<A>(&mut self, page: Page<Page1GB>, frame: UnusedFrame<Page1GB>, flags: PageTableFlags, allocator: &mut A)
-                    -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>>
+    unsafe fn map_to_1g<A>(&mut self, page: Page<Page1GB>, frame: UnusedFrame<Page1GB>, flags: PageTableFlags, allocator: &mut A)
+                           -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>>
         where A: FrameAllocator<Page4KB> {
         let p4 = &mut self.level_4_table;
         let p3 = self.pt_walker.create_next_table(&mut p4[page.p4_index()], allocator)?;
@@ -121,8 +121,8 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
         Ok(MapperFlush::new(page))
     }
     // 根据给定的帧和页面进行2mb页面映射
-    fn map_to_2mb<A>(&mut self, page: Page<Page2MB>, frame: UnusedFrame<Page2MB>, flags: PageTableFlags, allocator: &mut A)
-                     -> Result<MapperFlush<Page2MB>, MapToError<Page2MB>>
+    unsafe fn map_to_2mb<A>(&mut self, page: Page<Page2MB>, frame: UnusedFrame<Page2MB>, flags: PageTableFlags, allocator: &mut A)
+                            -> Result<MapperFlush<Page2MB>, MapToError<Page2MB>>
         where A: FrameAllocator<Page4KB> {
         let p4 = &mut self.level_4_table;
         // 创建3级页表
@@ -138,8 +138,8 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
         Ok(MapperFlush::new(page))
     }
     // 根据给定的帧和页面进行4kb页面映射
-    fn map_to_4kb<A>(&mut self, page: Page<Page4KB>, frame: UnusedFrame<Page4KB>, flags: PageTableFlags, allocator: &mut A)
-                     -> Result<MapperFlush<Page4KB>, MapToError<Page4KB>>
+    unsafe fn map_to_4kb<A>(&mut self, page: Page<Page4KB>, frame: UnusedFrame<Page4KB>, flags: PageTableFlags, allocator: &mut A)
+                            -> Result<MapperFlush<Page4KB>, MapToError<Page4KB>>
         where A: FrameAllocator<Page4KB> {
         let p4 = &mut self.level_4_table;
         // 创建3级页表
@@ -163,7 +163,7 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
 /////////////////////
 
 impl<'a, P: PhysicalToVirtual> Mapper<Page4KB> for MappedPageTable<'a, P> {
-    fn map_to<A>(&mut self, page: Page<Page4KB>, frame: UnusedFrame<Page4KB>, flags: PageTableFlags, allocator: &mut A) -> Result<MapperFlush<Page4KB>, MapToError<Page4KB>> where A: FrameAllocator<Page4KB>, Self: Sized {
+    unsafe fn map_to<A>(&mut self, page: Page<Page4KB>, frame: UnusedFrame<Page4KB>, flags: PageTableFlags, allocator: &mut A) -> Result<MapperFlush<Page4KB>, MapToError<Page4KB>> where A: FrameAllocator<Page4KB>, Self: Sized {
         self.map_to_4kb(page, frame, flags, allocator)
     }
 
@@ -184,7 +184,7 @@ impl<'a, P: PhysicalToVirtual> Mapper<Page4KB> for MappedPageTable<'a, P> {
         Ok((frame, MapperFlush::new(page)))
     }
 
-    fn update_flags(&mut self, page: Page<Page4KB>, flags: PageTableFlags) -> Result<MapperFlush<Page4KB>, FlagUpdateError> {
+    unsafe fn update_flags(&mut self, page: Page<Page4KB>, flags: PageTableFlags) -> Result<MapperFlush<Page4KB>, FlagUpdateError> {
         let p4 = &mut self.level_4_table;
         let p3 = self.pt_walker.next_table_mut(&mut p4[page.p3_index()])?;
         let p2 = self.pt_walker.next_table_mut(&mut p3[page.p2_index()])?;
@@ -216,7 +216,7 @@ impl<'a, P: PhysicalToVirtual> Mapper<Page4KB> for MappedPageTable<'a, P> {
 }
 
 impl<'a, P: PhysicalToVirtual> Mapper<Page2MB> for MappedPageTable<'a, P> {
-    fn map_to<A>(&mut self, page: Page<Page2MB>, frame: UnusedFrame<Page2MB>, flags: PageTableFlags, allocator: &mut A) -> Result<MapperFlush<Page2MB>, MapToError<Page2MB>> where A: FrameAllocator<Page4KB>, Self: Sized {
+    unsafe fn map_to<A>(&mut self, page: Page<Page2MB>, frame: UnusedFrame<Page2MB>, flags: PageTableFlags, allocator: &mut A) -> Result<MapperFlush<Page2MB>, MapToError<Page2MB>> where A: FrameAllocator<Page4KB>, Self: Sized {
         self.map_to_2mb(page, frame, flags, allocator)
     }
 
@@ -242,7 +242,7 @@ impl<'a, P: PhysicalToVirtual> Mapper<Page2MB> for MappedPageTable<'a, P> {
         Ok((frame, MapperFlush::new(page)))
     }
 
-    fn update_flags(&mut self, page: Page<Page2MB>, flags: PageTableFlags) -> Result<MapperFlush<Page2MB>, FlagUpdateError> {
+    unsafe fn update_flags(&mut self, page: Page<Page2MB>, flags: PageTableFlags) -> Result<MapperFlush<Page2MB>, FlagUpdateError> {
         let p4 = &mut self.level_4_table;
         let p3 = self.pt_walker.next_table_mut(&mut p4[page.p3_index()])?;
         let p2 = self.pt_walker.next_table_mut(&mut p3[page.p2_index()])?;
@@ -272,7 +272,7 @@ impl<'a, P: PhysicalToVirtual> Mapper<Page2MB> for MappedPageTable<'a, P> {
 }
 
 impl<'a, P: PhysicalToVirtual> Mapper<Page1GB> for MappedPageTable<'a, P> {
-    fn map_to<A>(&mut self, page: Page<Page1GB>, frame: UnusedFrame<Page1GB>, flags: PageTableFlags, allocator: &mut A) -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>> where A: FrameAllocator<Page4KB>, Self: Sized {
+    unsafe fn map_to<A>(&mut self, page: Page<Page1GB>, frame: UnusedFrame<Page1GB>, flags: PageTableFlags, allocator: &mut A) -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>> where A: FrameAllocator<Page4KB>, Self: Sized {
         self.map_to_1g(page, frame, flags, allocator)
     }
 
@@ -298,7 +298,7 @@ impl<'a, P: PhysicalToVirtual> Mapper<Page1GB> for MappedPageTable<'a, P> {
         Ok((frame, MapperFlush::new(page)))
     }
 
-    fn update_flags(&mut self, page: Page<Page1GB>, flags: PageTableFlags) -> Result<MapperFlush<Page1GB>, FlagUpdateError> {
+    unsafe fn update_flags(&mut self, page: Page<Page1GB>, flags: PageTableFlags) -> Result<MapperFlush<Page1GB>, FlagUpdateError> {
         let p4 = &mut self.level_4_table;
         let p3 = self.pt_walker.next_table_mut(&mut p4[page.p3_index()])?;
 

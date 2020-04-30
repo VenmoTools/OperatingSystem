@@ -1,16 +1,19 @@
-pub use map_pt::{MappedPageTable, PhysicalToVirtual};
-pub use pt_offset::{PageTableOffset, PhysOffset};
+// pub use map_pt::{MappedPageTable, PhysicalToVirtual};
+// pub use pt_offset::{PageTableOffset, PhysOffset};
+
+pub use page::RecursivePageTable;
 
 use crate::bits::PageTableFlags;
 use crate::ia_32e::{PhysAddr, VirtAddr};
-use crate::ia_32e::paging::allocator::{FrameAllocator, UnusedFrame};
+use crate::ia_32e::paging::allocator::FrameAllocator;
 use crate::ia_32e::paging::frame::Frame;
 use crate::ia_32e::paging::page::{Page, Page1GB, Page2MB, Page4KB, PageSize};
 use crate::ia_32e::paging::result::{FlagUpdateError, MapToError, TranslateError, TranslationResult, UnmapError};
 
-pub mod map_pt;
-pub mod pt_offset;
-
+// mod map_pt;
+// mod pt_offset;
+// mod recursive_table;
+mod page;
 
 #[derive(Debug)]
 #[must_use = "Page Table changes must be flushed or ignored."]
@@ -34,8 +37,8 @@ pub trait Mapper<S: PageSize> {
     /// 在页表中创建一个新的映射。
     /// 此函数需要其他物理帧才能创建新的页表。
     /// 帧的分配由`allocator`参数完成
-    fn map_to<A>(&mut self, page: Page<S>, frame: UnusedFrame<S>, flags: PageTableFlags, allocator: &mut A)
-                 -> Result<MapperFlush<S>, MapToError<S>>
+    unsafe fn map_to<A>(&mut self, page: Page<S>, frame: Frame<S>, flags: PageTableFlags, allocator: &mut A)
+                        -> Result<MapperFlush<S>, MapToError<S>>
         where A: FrameAllocator<Page4KB>, Self: Sized;
 
     /// 从页表中解除映射关系，并返回被解除关系的frame。
@@ -43,14 +46,14 @@ pub trait Mapper<S: PageSize> {
     fn unmap(&mut self, page: Page<S>) -> Result<(Frame<S>, MapperFlush<S>), UnmapError>;
 
     /// 更新现有映射的flags。
-    fn update_flags(&mut self, page: Page<S>, flags: PageTableFlags) -> Result<MapperFlush<S>, FlagUpdateError>;
+    unsafe fn update_flags(&mut self, page: Page<S>, flags: PageTableFlags) -> Result<MapperFlush<S>, FlagUpdateError>;
 
     /// 返回给定的页面与之映射的物理帧
     fn translate_page(&mut self, page: Page<S>) -> Result<Frame<S>, TranslateError>;
 
     /// 将给定的frame映射到相同虚拟地址的页面
     /// 此函数假定页面已映射到大小为`S`的frame，否则会返回错误。
-    unsafe fn identity_map<A>(&mut self, frame: UnusedFrame<S>, flags: PageTableFlags, allocator: &mut A)
+    unsafe fn identity_map<A>(&mut self, frame: Frame<S>, flags: PageTableFlags, allocator: &mut A)
                               -> Result<MapperFlush<S>, MapToError<S>>
         where A: FrameAllocator<Page4KB>, Self: Sized, S: PageSize, Self: Mapper<S> {
         let page = Page::include_address(VirtAddr::new(frame.start_address().as_u64()));
