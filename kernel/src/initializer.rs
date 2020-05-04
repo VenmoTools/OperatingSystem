@@ -1,19 +1,18 @@
-use multiboot2::{BootInformation, MemoryAreaType};
-use system::ia_32e::{align_down, ApicInfo};
+use system::ia_32e::ApicInfo;
 use system::ia_32e::instructions::interrupt::{disable_interrupt, enable_interrupt};
-use system::ia_32e::paging::MemoryType;
 use system::ia_32e::paging::frame_allocator::MemoryAreaManagement;
+use system::SystemInformation;
 
 use crate::descriptor::{init_gdt, init_idt, init_tss};
 use crate::memory::{add_to_heap, FRAME_ALLOCATOR, init_frame_allocator, RECU_PAGE_TABLE};
 use crate::process::{init_process, process_mut};
 use crate::utils::initialize_apic;
 
-pub struct Initializer<'a>(&'a BootInformation);
+pub struct Initializer(SystemInformation);
 
-impl<'a> Initializer<'a> {
-    pub fn new(boot: &'a BootInformation) -> Self {
-        Self(boot)
+impl Initializer {
+    pub fn new(info: SystemInformation) -> Self {
+        Self(info)
     }
     pub fn initialize(&self) {
         // init
@@ -47,28 +46,13 @@ impl<'a> Initializer<'a> {
         {
             RECU_PAGE_TABLE.lock();
         }
-        init_frame_allocator(self.0);
+        init_frame_allocator(self.0.kernel_start(), self.0.kernel_end());
         {
             let mut allocator = FRAME_ALLOCATOR.lock();
             println!("add memory area");
-            for area in self.0.memory_map_tag().unwrap().memory_areas() {
-                if area.start_address() == 0 {
-                    continue;
-                }
-                let ty = match area.typ() {
-                    MemoryAreaType::AcpiAvailable => MemoryType::ACPIArea,
-                    MemoryAreaType::Reserved => MemoryType::ReservedArea,
-                    MemoryAreaType::Available => MemoryType::FreeArea,
-                    MemoryAreaType::ReservedHibernate => MemoryType::ReservedHibernate,
-                    MemoryAreaType::Defective => MemoryType::Defective,
-                };
-                let mut addr = align_down(area.start_address(), 0x1000);
-                println!("{:#X?}", addr);
+            for area in self.0.mem_area_iter() {
                 let adder = allocator.as_mut().unwrap();
-                while addr < 0x100000 * 10 {
-                    addr += 0x1000;
-                    adder.add_area(addr, addr + 0x1000, ty, 0x1000);
-                }
+                adder.add_area(area.start_addr, area.end_addr, area.ty, area.length);
             }
         }
         println!("init frame allocator... done");

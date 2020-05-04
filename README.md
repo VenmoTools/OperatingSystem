@@ -1,5 +1,5 @@
 ﻿# Operating-System
-Operating System Notes
+macro kernel system, support mutiboot and uefi
 # 博客地址
 [使用Rust开发操作系统](https://blog.csdn.net/qq_41698827)
 # 编写环境

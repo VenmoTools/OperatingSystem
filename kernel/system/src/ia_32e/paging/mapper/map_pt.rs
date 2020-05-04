@@ -109,7 +109,7 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
 
     // 根据给定的帧和页面进行1gb页面映射
     unsafe fn map_to_1g<A>(&mut self, page: Page<Page1GB>, frame: UnusedFrame<Page1GB>, flags: PageTableFlags, allocator: &mut A)
-                           -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>>
+        -> Result<MapperFlush<Page1GB>, MapToError<Page1GB>>
         where A: FrameAllocator<Page4KB> {
         let p4 = &mut self.level_4_table;
         let p3 = self.pt_walker.create_next_table(&mut p4[page.p4_index()], allocator)?;
@@ -122,7 +122,7 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
     }
     // 根据给定的帧和页面进行2mb页面映射
     unsafe fn map_to_2mb<A>(&mut self, page: Page<Page2MB>, frame: UnusedFrame<Page2MB>, flags: PageTableFlags, allocator: &mut A)
-                            -> Result<MapperFlush<Page2MB>, MapToError<Page2MB>>
+        -> Result<MapperFlush<Page2MB>, MapToError<Page2MB>>
         where A: FrameAllocator<Page4KB> {
         let p4 = &mut self.level_4_table;
         // 创建3级页表
@@ -139,7 +139,7 @@ impl<'a, P: PhysicalToVirtual> MappedPageTable<'a, P> {
     }
     // 根据给定的帧和页面进行4kb页面映射
     unsafe fn map_to_4kb<A>(&mut self, page: Page<Page4KB>, frame: UnusedFrame<Page4KB>, flags: PageTableFlags, allocator: &mut A)
-                            -> Result<MapperFlush<Page4KB>, MapToError<Page4KB>>
+        -> Result<MapperFlush<Page4KB>, MapToError<Page4KB>>
         where A: FrameAllocator<Page4KB> {
         let p4 = &mut self.level_4_table;
         // 创建3级页表

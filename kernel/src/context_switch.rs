@@ -23,6 +23,9 @@ macro_rules! reset_all_register {
     };
 }
 
+/// do not call this function
+pub unsafe fn switch_context() {}
+
 #[naked]
 pub unsafe fn go_to_user_mode(ip: usize, sp: usize) {
     use crate::descriptor::GDT;

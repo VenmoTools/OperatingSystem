@@ -64,7 +64,7 @@ impl Process {
             sigstack: None,
             kfx: None,
             running: false,
-            cpu_id: None,
+            cpu_id: None
         }
     }
 

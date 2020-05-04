@@ -3,6 +3,22 @@
 use bitflags::bitflags;
 
 bitflags! {
+    /// Kernel Section bitflags.
+    pub struct KernelSectionFlags: u64 {
+        /// The section contains data that should be writable during program execution.
+        const WRITABLE = 0x1;
+
+        /// The section occupies memory during the process execution.
+        const ALLOCATED = 0x2;
+
+        /// The section contains executable machine instructions.
+        const EXECUTABLE = 0x4;
+        // plus environment-specific use at 0x0F000000
+        // plus processor-specific use at 0xF0000000
+    }
+}
+
+bitflags! {
     /// 页异常错误码
     #[repr(transparent)]
     pub struct PageFaultErrorCode: u64 {

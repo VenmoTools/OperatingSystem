@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(asm)]
+#![feature(llvm_asm)]
 #![feature(abi_efiapi)]
 #![feature(never_type)]
 #![feature(fn_traits)]
@@ -14,8 +14,8 @@ extern crate uefi;
 
 use alloc::vec::Vec;
 use result::{ok, Result, UefiResult};
-use system::ia_32e::cpu::control::{CR0, CR3, CR4};
 use system::ia_32e::cpu::apic::Efer;
+use system::ia_32e::cpu::control::{CR0, CR3, CR4};
 use system::KernelArgs;
 use uefi::prelude::*;
 use uefi::proto::console::gop::GraphicsOutput;
@@ -51,9 +51,11 @@ fn efi_main(image: Handle, st: SystemTable<Boot>) -> Status {
     // 分页检测
     paging_check();
     // 加载内核
-    let entry = load_kernel(bt);
+    let mut buf = Vec::new();
+    let (entry, elf) = load_kernel(bt, &mut buf);
+    let elf_ptr = &elf as *const _ as u64;
     // 跳转内核
-    switch_context(image, gop, st, entry)
+    switch_context(image, gop, st, entry, elf_ptr)
 }
 
 fn reset_console(st: &SystemTable<Boot>) {
@@ -66,7 +68,7 @@ fn reset_console(st: &SystemTable<Boot>) {
 macro_rules! set_stack_pointer {
     () => {
         unsafe {
-            asm!(
+            llvm_asm!(
                 "mov rax,0x200000;\
                 mov rsp,rax;"
                 : : : : "intel", "volatile"
@@ -75,7 +77,11 @@ macro_rules! set_stack_pointer {
     };
 }
 
-fn switch_context(image: uefi::Handle, gop: &mut GraphicsOutput, st: SystemTable<Boot>, f: KernelEnterPoint) -> ! {
+fn switch_context(image: uefi::Handle,
+                  gop: &mut GraphicsOutput,
+                  st: SystemTable<Boot>,
+                  f: KernelEnterPoint,
+                  elf: u64) -> ! {
     let mmap_size = st.boot_services().memory_map_size();
     let ptr = st.boot_services().allocate_pool(MemoryType::RUNTIME_SERVICES_DATA, mmap_size).log_warning().unwrap();
     let mmp = unsafe { core::slice::from_raw_parts_mut(ptr, mmap_size) };
@@ -84,8 +90,9 @@ fn switch_context(image: uefi::Handle, gop: &mut GraphicsOutput, st: SystemTable
     reset_console(&st);
     let (ref st, ref mut iter) = st.exit_boot_services(image, mmp).log_warning().unwrap();
     let args = &KernelArgs {
-        st:  st as *const _ as u64,
+        st: st as *const _ as u64,
         iter: iter as *mut _ as u64,
+        kernel_elf: elf,
         kernel_start: unsafe { KERNEL_START },
         kernel_end: unsafe { KERNEL_END },
         stack_start: 0x200000,
@@ -94,7 +101,7 @@ fn switch_context(image: uefi::Handle, gop: &mut GraphicsOutput, st: SystemTable
         frame_size: frame.size(),
     };
     let ptr = args as *const _ as u64;
-    println!("uefi:{}",ptr);
+    println!("uefi:{}", ptr);
     set_stack_pointer!();
     f(ptr)
 }
@@ -144,8 +151,8 @@ fn load(bt: &BootServices, elf: &ElfFile, header: &ProgramHeader64) {
         };
         assert_eq!(dest as u64, header.virtual_addr & !0x0fff);
         // BUG! when use system crate not use 'call' features it panic!
-        if let Err(e) = bt.allocate_pages(AllocateType::Address(dest), MemoryType::LOADER_CODE, page_num).log_warning(){
-            panic!("occur when allocate kernel memory{:?}",e);
+        if let Err(e) = bt.allocate_pages(AllocateType::Address(dest), MemoryType::LOADER_CODE, page_num).log_warning() {
+            panic!("occur when allocate kernel memory{:?}", e);
         }
 
         unsafe { bt.memset(dest as *mut u8, page_num * 4096, 0) };
@@ -211,11 +218,11 @@ fn switch_display_mode(gop: &mut GraphicsOutput, display_mode: (usize, usize)) {
     info!("{:?}", gop.current_mode_info());
 }
 
-fn load_kernel(bt: &BootServices) -> KernelEnterPoint {
+fn load_kernel<'a>(bt: &'a BootServices, buf: &'a mut Vec<u8>) -> (KernelEnterPoint, ElfFile<'a>) {
     let mut f = fs::File::new(bt);
     let mut reader = f.open(r"EFI\Boot\kernel", "r").log_warning().unwrap().unwrap();
-    let mut buf = Vec::new();
-    reader.read_to_end(&mut buf).unwrap();
+    reader.read_to_end(buf).unwrap();
     let elf = ElfFile::new(buf.as_slice()).unwrap();
-    load_elf(bt, &elf)
+    let entry = load_elf(bt, &elf);
+    (entry, elf)
 }

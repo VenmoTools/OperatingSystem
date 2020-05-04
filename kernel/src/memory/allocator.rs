@@ -2,7 +2,6 @@ use alloc::boxed::Box;
 use bitflags::_core::ptr::slice_from_raw_parts_mut;
 use core::alloc::Layout;
 use lazy_static::lazy_static;
-use multiboot2::BootInformation;
 use spin::Mutex;
 use system::buddy_system_allocator::LockedHeap;
 use system::ia_32e::paging::frame_allocator::{AdaptationAllocator, BumpAllocator};
@@ -17,10 +16,8 @@ lazy_static! {
     pub static ref FRAME_ALLOCATOR: Mutex<Option<AdaptationAllocator<BumpAllocator>>> = Mutex::new(None);
 }
 
-pub fn init_frame_allocator(info: &BootInformation) {
-    let k_start = info.elf_sections_tag().unwrap().sections().map(|s| s.start_address()).min().unwrap();
-    let k_end = info.elf_sections_tag().unwrap().sections().map(|s| s.start_address()).max().unwrap();
-    *FRAME_ALLOCATOR.lock() = Some(AdaptationAllocator::new(BumpAllocator::new(k_start, k_end)))
+pub fn init_frame_allocator(start: u64, end: u64) {
+    *FRAME_ALLOCATOR.lock() = Some(AdaptationAllocator::new(BumpAllocator::new(start, end)))
 }
 
 #[alloc_error_handler]

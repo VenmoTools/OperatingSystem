@@ -119,8 +119,14 @@ pub enum MemoryType {
     UsedArea,
     ReservedArea,
     ACPIArea,
+    ACPIReservedArea,
     ReservedHibernate,
     Defective,
+    UefiRunTimeCode,
+    UefiRunTimeData,
+    MMIO,
+    MMIOPortArea,
+    ErrorArea,
 }
 
 impl Default for MemoryType {
@@ -169,6 +175,10 @@ impl MemorySpace {
         Self {
             space: Vec::new(),
         }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item=&MemoryArea> + '_ {
+        self.space.iter()
     }
 
     pub fn add_area(&mut self, start_addr: u64, end_addr: u64, ty: MemoryType, len: u64) {

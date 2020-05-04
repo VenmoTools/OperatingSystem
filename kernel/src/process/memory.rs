@@ -13,7 +13,7 @@ use crate::memory::{FRAME_ALLOCATOR, HEAP};
 pub struct Memory {
     start: VirtAddr,
     size: usize,
-    flags: PageTableFlags,
+    flags: PageTableFlags
 }
 
 impl Memory {
@@ -93,13 +93,13 @@ impl Memory {
                                     table.map_to(page, frame, self.flags, FRAME_ALLOCATOR.lock().as_mut().expect("frame allocator not init")).expect("map page mapped failed").flush();
                                 }
                             }
-                            TranslateError::ParentEntryHugePage => { panic!(format!("address {:#?} already mapped", page.start_address()).as_str()) }
+                            TranslateError::ParentEntryHugePage => { panic!(format!("address {:#?} already mapped", page.start_address()).as_str()) },
                             TranslateError::InvalidFrameAddress(addr) => {
                                 panic!(format!("invalid frame address {:#?} ", addr).as_str())
                             }
                         }
                     }
-                    _ => {}
+                    _ => {},
                 }
             }
             if clear {
@@ -129,7 +129,7 @@ impl Drop for Memory {
 #[derive(Clone, Debug)]
 pub enum SharedMemory {
     Owned(Arc<Mutex<Memory>>),
-    Borrowed(Weak<Mutex<Memory>>),
+    Borrowed(Weak<Mutex<Memory>>)
 }
 
 impl SharedMemory {
@@ -138,7 +138,7 @@ impl SharedMemory {
             SharedMemory::Owned(ref memory_lock) => {
                 let mut memory = memory_lock.lock();
                 f(&mut *memory)
-            }
+            },
             SharedMemory::Borrowed(ref memory_weak) => {
                 let memory_lock = memory_weak.upgrade().expect("SharedMemory::Borrowed no longer valid");
                 let mut memory = memory_lock.lock();

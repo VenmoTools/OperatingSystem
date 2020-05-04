@@ -23,6 +23,11 @@ raw-cpuid = "7.0.3"
 buddy_system_allocator="0.4.0"
 bitflags = "1.2.1"
 
+[dependencies.crossbeam-queue]
+version="0.2.1"
+default-features = false
+features=["alloc"]
+
 [dependencies.system]
 path="system/"
 version="0.3.0"
@@ -31,6 +36,14 @@ features=["call"]
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
+
+[dependencies.uefi]
+version="0.4.4"
+
+[dependencies.futures-util]
+version = "0.3.4"
+default-features = false
+features = ["alloc"]
 
 [lib]
 name="rslib"
@@ -42,4 +55,4 @@ xapic=[]
 x2apic=[]
 pic=[]
 mutiboot=[]
-uefi=[]
+efi=[]

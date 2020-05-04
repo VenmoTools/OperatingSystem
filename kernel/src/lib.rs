@@ -14,8 +14,13 @@ extern crate multiboot2;
 // #[macro_use]
 extern crate system;
 
+
 use core::panic::PanicInfo;
+#[cfg(feature = "efi")]
 use system::KernelArgs;
+use system::SystemInformation;
+#[cfg(feature = "efi")]
+use uefi::table::boot::{AllocateType, MemoryMapIter, MemoryMapKey, MemoryType};
 
 use crate::initializer::Initializer;
 use crate::utils::loop_hlt;
@@ -30,21 +35,22 @@ mod context_switch;
 mod process;
 mod async_process;
 
-#[cfg(feature = "uefi")]
+#[cfg(feature = "efi")]
 #[no_mangle]
 extern "C" fn kmain(info_addr: usize) -> ! {
     println!("uefi entry");
-    let args = unsafe { &*((args) as *const KernelArgs) };
-    let iter = get_mem_iter(args);
+    let info = SystemInformation::new(info_addr);
+    Initializer::new(info).initialize();
     loop_hlt()
 }
+
 
 #[cfg(feature = "mutiboot")]
 #[no_mangle]
 extern "C" fn kmain(info_addr: usize) -> ! {
     println!("entry kernel");
-    let boot = unsafe { multiboot2::load(info_addr) };
-    Initializer::new(&boot).initialize();
+    let info = SystemInformation::new(info_addr);
+    Initializer::new(info).initialize();
     loop_hlt()
 }
 
@@ -55,13 +61,3 @@ pub fn panic_handler(info: &PanicInfo) -> ! {
     loop_hlt()
 }
 
-#[cfg(feature = "uefi")]
-fn get_mem_iter(args: &KernelArgs) -> &mut MemoryMapIter {
-    unsafe { &mut *(args.iter as *mut MemoryMapIter) }
-}
-
-#[cfg(feature = "uefi")]
-#[allow(dead_code)]
-fn get_system_table(args: &KernelArgs) -> &SystemTable<Runtime> {
-    unsafe { &*(args.st as *const SystemTable<Runtime>) }
-}

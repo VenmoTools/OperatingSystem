@@ -156,7 +156,7 @@ class Grub:
 
 
 if __name__ == '__main__':
-    # fs = Nasm().elf64().dirs("src/boot").run()
+    # fs = Nasm().elf64().dirs("kernel/src/boot").run()
     fs = Nasm().use_temp_file()
     p = KernelBuilder() \
         .build()
@@ -167,5 +167,5 @@ if __name__ == '__main__':
         .link("kernel.bin")
     Grub() \
         .add_kernel_file(kernel_file) \
-        .add_grub_path("src/boot/grub.cfg") \
+        .add_grub_path("kernel/src/boot/grub.cfg") \
         .mkiso_file("os.iso")

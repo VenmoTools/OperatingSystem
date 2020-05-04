@@ -14,6 +14,7 @@ pub struct xApic {
 }
 
 impl xApic {
+
     pub fn new(base: usize) -> Self {
         Self { base }
     }
@@ -59,6 +60,7 @@ impl xApic {
             // Enable interrupts on the APIC (but not on the processor).
             self.write(TPR, 0);
         }
+
     }
     pub fn id(&self) -> u32 {
         unsafe { self.read(ID) >> 24 }
@@ -145,7 +147,6 @@ impl fmt::Debug for xApic {
             .finish()
     }
 }
-
 impl xApic {
     unsafe fn read(&self, reg: u32) -> u32 {
         read_volatile((self.base + reg as usize) as *const u32)
