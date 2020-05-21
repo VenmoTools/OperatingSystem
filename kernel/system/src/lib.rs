@@ -1,6 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(const_fn)]
-#![feature(asm)]
 #![allow(dead_code)]
 #![allow(unused_assignments)]
 #![feature(abi_x86_interrupt)]

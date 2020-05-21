@@ -1,6 +1,6 @@
 use system::{get_rsp, pop_scratch, push_scratch};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct ProcessRegister {
     /// FX valid?
     loadable: bool,
@@ -92,11 +92,11 @@ impl ProcessRegister {
         // save fx register
         llvm_asm!("fxsave [$0]"         :               : "r"(self.fx)      : "memory" :"intel", "volatile");
         //todo:
-        if self.loadable {
-            llvm_asm!("fxrstor64 [$0]"  :               :"r"(next.fx)       : "memory" :"intel", "volatile");
-        } else {
-            llvm_asm!("fninit [$0]"     :               :                   : "memory" :"intel", "volatile");
-        }
+        // if self.loadable {
+        //     llvm_asm!("fxrstor64 [$0]"  :               :"r"(next.fx)       : "memory" :"intel", "volatile");
+        // } else {
+        //     llvm_asm!("fninit [$0]"     :               :                   : "memory" :"intel", "volatile");
+        // }
         // switch cr3
         llvm_asm!("mov $0, cr3"    : "=r"(self.cr3)     :                   : "memory" : "intel", "volatile");
         if self.cr3 != next.cr3 {

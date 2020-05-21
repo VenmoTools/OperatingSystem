@@ -1,0 +1,23 @@
+[kernel]
+kernel_name = "" # not use right now
+output = "." # `.` means project dir do not use `..`
+
+[iso]
+name ="os" # os.iso
+
+[multiboot]
+use = true # use multiboot or uefi
+tempfile = true # use kernel/too_temp or will rebuild multiboot file
+features = ["pic"] # pic xapic or x2apic default pic
+arch = "x86-64" # right now only support x86-64 otherwise will panic
+release = false
+
+[uefi]
+use = false # it must be false when use multiboot
+output="." # ouput path when build efi file finished
+features = ["pic"] # pic xapic or x2apic
+arch = "x86-64" # right now only support x86-64 otherwise will panic
+release = false
+
+
+

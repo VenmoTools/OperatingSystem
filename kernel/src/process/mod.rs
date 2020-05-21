@@ -53,6 +53,10 @@ impl ProcessList {
         self.list.get(&CURRENT_PROCESS.load(Ordering::SeqCst))
     }
 
+    pub fn iter(&self) -> ::alloc::collections::btree_map::Iter<ProcessId, Arc<RwLock<Process>>> {
+        self.list.iter()
+    }
+
     pub fn new_process(&mut self) -> Result<&Arc<RwLock<Process>>> {
         if self.next_id >= MAX_PROCESS {
             self.next_id = 1;

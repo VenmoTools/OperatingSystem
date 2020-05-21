@@ -68,9 +68,13 @@ pub fn run_qemu(path: &Path) {
     let p_code = format!("if=pflash,format=raw,file={},readonly=on", path.join("OVMF_CODE.fd").to_str().unwrap());
     let p_vars = format!("if=pflash,format=raw,file={},readonly=on", path.join("OVMF_VARS.fd").to_str().unwrap());
     let p_esp = format!("format=raw,file=fat:rw:{}", path.join("target\\debug\\esp").to_str().unwrap());
-    let process = Command::new("qemu-system-x86_64w.exe").stdout(Stdio::piped())
+
+    let p_vars = format!("if=pflash,format=raw,file={},readonly=on", path.join("OVMF.fd").to_str().unwrap());
+
+    let process = Command::new("qemu-system-x86_64.exe").stdout(Stdio::piped())
         .args(&[
-            "-drive", p_code.as_str(),
+            // "-drive", p_code.as_str(),
+            // "-drive", p_vars.as_str(),
             "-drive", p_vars.as_str(),
             "-drive", p_esp.as_str(),
             "-serial", "stdio",

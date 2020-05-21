@@ -14,16 +14,13 @@ sudo apt install qemu-system-x86
 ```
 
 ## RUST 编译器
-rustc 1.41.0-nightly (ded5ee001 2019-11-13)
-
+### Rust版本
+rust version 1.45.0-nightly (2454a68cf 2020-05-04)
 ### 安装
-
 #### rust:
-
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-
 #### nightly安装（需要安装rustup 一般安装完rust后自带的）
 ```
 rustup install nightly
@@ -44,7 +41,6 @@ $ rustup override set nightly
 ```
 
 ### 安装xbuild
-
 ```
 cargo install cargo-xbuild
 ```
@@ -102,11 +98,19 @@ edk2$ build -a X64 -p OvmfPkg/OvmfPkgX64.dsc -t GCC5
 ```
 编译完毕后将`OVMF.fd`, `OVMF_CODE.fd`, `OVMF_VARS.fd`拷贝至`项目目录`
 
+# 使用构建文件
+构建文件为`build.toml` 定义好后使用以下命令构建内核
+```
+python3 build.py
+```
+在构建时需要：
+    1. 安装toml库 （pip3/pip install toml）
+    2. 安装xorriso或libisoburn (sudo apt-get install xorriso，根据不同的平台)
+    3. 安装grub-mkrescue(有些系统是grub-mkrescue2)
 
 ## 启动QEUM
-在项目目录中执行以下命令
 ```
-cargo run
+qemu-system-x86_64 -cdrom os.iso -serial stdio -device isa-debug-exit,iobase=0xf4,iosize=0x04
 ```
 
 # 参考书籍

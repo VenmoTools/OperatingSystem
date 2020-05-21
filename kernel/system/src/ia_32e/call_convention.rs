@@ -251,6 +251,7 @@ impl InterruptStack {
     pub fn fs(&self) -> VirtAddr {
         VirtAddr::new({ self.fs } as u64)
     }
+
 }
 
 #[macro_export]
@@ -263,16 +264,13 @@ macro_rules! interrupt {
                 $func
             }
             // 保存scratch寄存器中数据
-            scratch_push!();
-            // 保存fs寄存器
-            fs_push!();
-            cld!();
+            $crate::push_scratch!();
+            $crate::cld!();
 
             inner();
 
-            fs_pop!();
-            scratch_pop!();
-            iret!();
+            $crate::pop_scratch!();
+            $crate::iret!();
         }
     };
 }

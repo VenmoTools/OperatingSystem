@@ -58,12 +58,25 @@ impl Initializer {
         println!("init frame allocator... done");
         init_process();
         println!("init first process... done");
-        process_mut().spawn(|| {
-            let mut i = 0;
+        create_process(|| {
+            let mut i = 1;
             while i < 5 {
-                println!("new process");
                 i += 1;
+                println!("new process1 {}", i);
             }
-        }).expect("new process error");
+        });
+        create_process(|| {
+            let mut i = 1;
+            while i < 5 {
+                i += 1;
+                println!("new process2 {}", i);
+            }
+        });
     }
+}
+
+pub fn create_process(f: fn()) {
+    let mut s = process_mut();
+    s.spawn(f).expect("new process error");
+    println!("crate new process");
 }
