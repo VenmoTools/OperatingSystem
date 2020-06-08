@@ -17,7 +17,7 @@ pub struct ScratchRegisters {
 
 impl ScratchRegisters {
     pub fn dump(&self) -> String {
-        format!("[ScratchRegisters] RAX:{} RCX:{} RDX:{} RDI:{} RSI:{} R8:{} R9:{} R10:{} R11:{}\n", { self.rax }, { self.rcx }, { self.rdx }, { self.rdi }, { self.rsi }, { self.r8 }, { self.r9 }, { self.r10 }, { self.r11 })
+        format!("[ScratchRegisters] RAX:{:#X} RCX:{:#X} RDX:{:#X} RDI:{:#X} RSI:{:#X} R8:{:#X} R9:{:#X} R10:{:#X} R11:{:#X}", { self.rax }, { self.rcx }, { self.rdx }, { self.rdi }, { self.rsi }, { self.r8 }, { self.r9 }, { self.r10 }, { self.r11 })
     }
     pub fn rax(&self) -> VirtAddr {
         VirtAddr::new({ self.rax } as u64)
@@ -95,7 +95,7 @@ pub struct PreservedRegisters {
 impl PreservedRegisters {
     /// https://github.com/rust-lang/rust/issues/46043
     pub fn dump(&self) -> String {
-        format!("[PreservedRegisters] r15:{},r14:{},r13:{},r12:{},rbp:{},rbx:{}\n", { self.r15 }, { self.r14 }, { self.r13 }, { self.r12 }, { self.rbp }, { self.rbx })
+        format!("[PreservedRegisters] r15:{:#X},r14:{:#X},r13:{:#X},r12:{:#X},rbp:{:#X},rbx:{:#X}", { self.r15 }, { self.r14 }, { self.r13 }, { self.r12 }, { self.rbp }, { self.rbx })
     }
     pub fn r15(&self) -> VirtAddr {
         VirtAddr::new({ self.r15 } as u64)
@@ -161,7 +161,7 @@ pub struct IretRegisters {
 impl IretRegisters {
     /// https://github.com/rust-lang/rust/issues/46043
     pub fn dump(&self) -> String {
-        format!("[IretRegister]: rip:{},cs:{},rflags:{},rsp:{},ss:{}\n", { self.rip }, { self.cs }, { self.rflags }, { self.rsp }, { self.ss })
+        format!("[IretRegister]: rip:{:#X},cs:{:#X},rflags:{:#X},rsp:{:#X},ss:{:#X}", { self.rip }, { self.cs }, { self.rflags }, { self.rsp }, { self.ss })
     }
     pub fn rip(&self) -> VirtAddr {
         VirtAddr::new({ self.rip } as u64)
@@ -245,7 +245,7 @@ pub struct InterruptStack {
 impl InterruptStack {
     /// https://github.com/rust-lang/rust/issues/46043
     pub fn dump(&self) -> String {
-        format!("[FS] {} \n{} {} {}", { self.fs }, self.preserved.dump(), self.scratch.dump(), self.iret.dump())
+        format!("[FS] {} {} {} {}", { self.fs }, self.preserved.dump(), self.scratch.dump(), self.iret.dump())
     }
 
     pub fn fs(&self) -> VirtAddr {

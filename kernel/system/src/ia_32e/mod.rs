@@ -1,9 +1,7 @@
-pub use addr::{align_down, align_up, NoCanonicalAddr, NoInvalidPhysAddr, PhysAddr, VirtAddr};
+pub use addr::{NoCanonicalAddr, NoInvalidPhysAddr, PhysAddr, VirtAddr, align_down, align_up};
 use core::fmt;
-
+use crate::ia_32e::x2apic::register::{TimerMode, TimerDivide, IpiDestMode};
 use crate::alloc::string::String;
-use crate::ia_32e::x2apic::register::{IpiDestMode, TimerDivide, TimerMode};
-
 ///! ia-32模式下的描述符操作，分页操作，PIC以及常用的指令
 mod addr;
 pub mod descriptor;
@@ -15,6 +13,7 @@ pub mod acpi;
 pub mod call_convention;
 pub mod xapic;
 pub mod controller;
+pub mod serial;
 
 /// 系统特权级
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -156,10 +155,10 @@ impl ApicInfo {
         if cfg!(x2apic)
             && self.timer_vector.is_none()
             || self.error_vector.is_none()
-            || self.spurious_vector.is_none() {
+            || self.spurious_vector.is_none(){
             return Err(String::from("x2apic: required field(s) empty"));
         }
-        if cfg!(xapic) && self.ioapic_offset.is_none() {
+        if cfg!(xapic) &&  self.ioapic_offset.is_none() {
             return Err(String::from("xapic: required field(s) empty"));
         }
         Ok(self)

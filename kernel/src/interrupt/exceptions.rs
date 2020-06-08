@@ -1,6 +1,7 @@
 use system::interrupt_frame;
 
 use crate::println;
+use crate::utils::loop_hlt;
 
 ////////////////////// Exceptions /////////////////////////////
 interrupt_frame!(divide_by_zero,stack,{
@@ -24,11 +25,12 @@ interrupt_frame!(invalid_opcode, stack, {
 });
 
 interrupt_frame!(page_fault, stack, {
-    println!("Invalid opcode fault: {:?}",stack.dump());
+    println!("Page_fault: {:?}",stack.dump());
+    loop_hlt();
 });
 
 interrupt_frame!(double_fault, stack, {
-    println!("Invalid opcode fault: {:?}",stack.dump());
+    println!("Double_fault: {:?}",stack.dump());
 });
 
 interrupt_frame!(invalid_tss,stack,{
@@ -50,6 +52,9 @@ interrupt_frame!(device_not_available,stack,{
     println!("device_not_available: {:?}",stack.dump());
 });
 interrupt_frame!(general_protection_fault,stack,{
+    use system::ia_32e::instructions::segmention::cs;
+    let s = cs();
+    println!("rpl {:?}", s.rpl());
     println!("general_protection_fault: {:?}",stack.dump());
 });
 interrupt_frame!(machine_check,stack,{

@@ -1,10 +1,9 @@
 use bitflags::_core::sync::atomic::AtomicUsize;
-use lazy_static::lazy_static;
 use spin::Mutex;
 use system::ia_32e::ApicInfo;
-use system::ia_32e::controller::ProgrammableController;
 #[cfg(feature = "pic")]
 use system::ia_32e::controller::PIC;
+use system::ia_32e::controller::ProgrammableController;
 #[cfg(feature = "xapic")]
 use system::ia_32e::controller::X2APIC;
 #[cfg(feature = "x2apic")]
@@ -17,6 +16,8 @@ use system::ia_32e::x2apic::local_apic::LocalApic;
 use system::ia_32e::xapic::consts::LAPIC_ADDR;
 #[cfg(feature = "xapic")]
 use system::ia_32e::xapic::xApic;
+
+use lazy_static::lazy_static;
 
 use crate::interrupt::{exceptions, irq};
 use crate::println;
@@ -62,7 +63,7 @@ impl From<InterruptIndex> for usize {
 
 impl From<InterruptIndex> for u8 {
     fn from(index: InterruptIndex) -> Self {
-        usize::from(index) as u8
+        Self::from(index as u8)
     }
 }
 

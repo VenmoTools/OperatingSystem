@@ -7,4 +7,4 @@ mod pic;
 pub mod control;
 pub mod apic;
 pub mod msr;
-
+pub mod timer;

@@ -1,10 +1,13 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+
 use bitflags::_core::sync::atomic::{AtomicBool, Ordering};
-use lazy_static::lazy_static;
 use spin::{Mutex, RwLock};
 use system::ia_32e::instructions::interrupt::{disable_interrupt, enable_interrupt, system_pause};
 
+use lazy_static::lazy_static;
+
+use crate::descriptor::TICKS;
 use crate::process::{CURRENT_PROCESS, process_mut};
 use crate::process::process::{Process, Status};
 use crate::process::types::ProcessId;
@@ -133,5 +136,6 @@ pub fn switch() -> bool {
         }
         true
     };// `next` will release here
+    TICKS.store(0, Ordering::SeqCst);
     res
 }

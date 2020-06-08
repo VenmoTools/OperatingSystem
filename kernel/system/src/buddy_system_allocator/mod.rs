@@ -1,23 +1,23 @@
-use alloc::alloc::{AllocErr, Layout};
-// #[rustversion::since(2020-04-02)]
-use alloc::alloc::{AllocInit, MemoryBlock};
 /// this mod base on https://github.com/rcore-os/buddy_system_allocator
 
 
 use alloc::alloc::AllocRef;
+use alloc::alloc::{AllocErr, Layout};
+// #[rustversion::since(2020-04-02)]
+use alloc::alloc::{AllocInit, MemoryBlock};
 use core::alloc::GlobalAlloc;
 use core::cmp::{max, min};
 use core::fmt;
-use core::marker::{Send, Sync};
 use core::mem::size_of;
 use core::ops::Deref;
 use core::ptr::NonNull;
-pub use frame::*;
+use core::marker::{Sync,Send};
 
-use crate::Mutex;
 
 mod frame;
 pub mod linked_list;
+pub use frame::*;
+use crate::Mutex;
 
 /// A heap that uses buddy system
 ///
@@ -258,9 +258,8 @@ impl LockedHeap {
     }
 }
 
-unsafe impl Sync for LockedHeap {}
-
-unsafe impl Send for LockedHeap {}
+unsafe impl Sync for LockedHeap{}
+unsafe impl Send for LockedHeap{}
 
 impl Deref for LockedHeap {
     type Target = Mutex<Heap>;

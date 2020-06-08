@@ -1,11 +1,13 @@
 use alloc::boxed::Box;
-use bitflags::_core::ptr::slice_from_raw_parts_mut;
 use core::alloc::Layout;
-use lazy_static::lazy_static;
+
+use bitflags::_core::ptr::slice_from_raw_parts_mut;
 use spin::Mutex;
 use system::buddy_system_allocator::LockedHeap;
 use system::ia_32e::paging::frame_allocator::{AdaptationAllocator, BumpAllocator};
 use system::result::Result;
+
+use lazy_static::lazy_static;
 
 use crate::utils::loop_hlt;
 

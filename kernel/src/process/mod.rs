@@ -1,9 +1,10 @@
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::sync::Arc;
-use bitflags::_core::sync::atomic::Ordering;
 use core::mem;
 use core::sync::atomic::AtomicUsize;
+
+use bitflags::_core::sync::atomic::Ordering;
 use spin::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use system::ia_32e::cpu::control::CR3;
 use system::result::{Error, ProcessErrorKind, Result};
@@ -79,7 +80,6 @@ impl ProcessList {
                 )
             );
         }
-
         Ok(self.list.get(&id).expect("Failed to insert new context. ID is out of bounds."))
     }
 

@@ -1,12 +1,10 @@
-use core::fmt;
 use core::ptr::read_volatile;
 use core::ptr::write_volatile;
-
-use crate::bits::BitOpt;
-use crate::ia_32e::instructions::port::outw;
-use crate::ia_32e::xapic::consts::{ASSERT, BCAST, CMOS_PORT, CMOS_RETURN, DELIVS, ENABLE, EOI, ERROR, ESR, ICRHI, ICRLO, ID, INIT, IRQ_ERROR, IRQ_SPURIOUS, IRQ_TIMER, LEVEL, LINT0, LINT1, MASKED, PCINT, PERIODIC, STARTUP, T_IRQ0, TDCR, TICR, TIMER, TPR, VER, X1};
-
 use super::consts::SVR;
+use crate::ia_32e::xapic::consts::{ENABLE, T_IRQ0, IRQ_SPURIOUS, TDCR, X1, PERIODIC, TIMER, IRQ_TIMER, LINT0, TICR, LINT1, MASKED, VER, PCINT, ERROR, IRQ_ERROR, ESR, EOI, ICRHI, ICRLO, BCAST, INIT, LEVEL, DELIVS, TPR, STARTUP, CMOS_PORT, CMOS_RETURN, ASSERT, ID};
+use core::fmt;
+use crate::ia_32e::instructions::port::outw;
+use crate::bits::BitOpt;
 
 #[allow(non_camel_case_types)]
 pub struct xApic {
@@ -132,10 +130,10 @@ macro_rules! rdtsc {
 }
 
 fn microdelay(us: u64) {
-    let start = rdtsc!();
+    let start  = rdtsc!();
     let freq = 3_000_000_000u64; // 3GHz
     let end = start + freq / 1_000_000 * us;
-    while rdtsc!() < end {}
+    while rdtsc!()  < end {}
 }
 
 impl fmt::Debug for xApic {
@@ -149,10 +147,10 @@ impl fmt::Debug for xApic {
 }
 impl xApic {
     unsafe fn read(&self, reg: u32) -> u32 {
-        read_volatile((self.base + reg as usize) as *const u32)
+        read_volatile((self.base +reg as usize) as *const u32)
     }
-    unsafe fn write(&self, reg: u32, value: u32) {
-        write_volatile((self.base + reg as usize) as *mut u32, value);
+    unsafe fn write(&self,reg:u32,value:u32){
+        write_volatile((self.base +reg as usize) as *mut u32,value);
         let _ = self.read(0x20);
     }
 }

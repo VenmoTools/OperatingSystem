@@ -1,12 +1,12 @@
-use crate::bits::PageTableFlags;
-use crate::ia_32e::paging::allocator::{FrameAllocator, UnusedFrame};
-use crate::ia_32e::paging::frame::Frame;
-use crate::ia_32e::paging::mapper::{MapAllSize, Mapper, MapperFlush};
 use crate::ia_32e::paging::mapper::map_pt::{MappedPageTable, PhysicalToVirtual};
-use crate::ia_32e::paging::page::{Page, Page1GB, Page2MB, Page4KB};
-use crate::ia_32e::paging::PageTable;
-use crate::ia_32e::paging::result::{FlagUpdateError, MapToError, TranslateError, TranslationResult, UnmapError};
 use crate::ia_32e::VirtAddr;
+use crate::ia_32e::paging::PageTable;
+use crate::ia_32e::paging::frame::Frame;
+use crate::ia_32e::paging::page::{Page4KB, Page1GB, Page, Page2MB};
+use crate::ia_32e::paging::mapper::{Mapper, MapperFlush, MapAllSize};
+use crate::ia_32e::paging::allocator::{UnusedFrame, FrameAllocator};
+use crate::ia_32e::paging::result::{UnmapError, FlagUpdateError, TranslateError, MapToError, TranslationResult};
+use crate::bits::PageTableFlags;
 
 #[derive(Debug)]
 pub struct PhysOffset {

@@ -23,6 +23,8 @@ pub struct Process {
     pub running: bool,
     /// Status of context
     pub status: Status,
+    /// Current system call
+    pub syscall: Option<(usize, usize, usize, usize, usize, usize)>,
     /// Head buffer to use when system call buffers are not page aligned
     pub syscall_head: Box<[u8]>,
     /// Tail buffer to use when system call buffers are not page aligned
@@ -54,6 +56,7 @@ impl Process {
             id,
             sigmask: [0; 2],
             status: Status::Blocked,
+            syscall: None,
             syscall_head,
             syscall_tail,
             register: ProcessRegister::new(),

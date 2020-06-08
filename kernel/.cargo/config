@@ -2,9 +2,15 @@
 [build]
 target = "x86_64-unknown-none.json"
 
-[source.crates-io]
-registry = "https://github.com/rust-lang/crates.io-index"
-replace-with = 'ustc'
+#[source.crates-io]
+#registry = "https://github.com/rust-lang/crates.io-index"
+#replace-with = 'ustc'
+#
+#[source.ustc]
+#registry = "http://mirrors.ustc.edu.cn/crates.io-index"
 
-[source.ustc]
-registry = "http://mirrors.ustc.edu.cn/crates.io-index"
+[source.crates-io]
+replace-with = 'tuna'
+
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"

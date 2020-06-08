@@ -43,7 +43,7 @@ bitflags! {
 }
 
 
-bitflags! {
+bitflags!{
     pub struct LocalAPICFlags: u8{
         /// 发送校验和错误 LocalAPIC检测到发往APIC总线的中断消息出现校验和错误
         const SEND_CHECKSUM_ERROR = 1 << 0;

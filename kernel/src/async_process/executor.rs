@@ -1,4 +1,6 @@
+use core::future::Future;
 use core::task::{Context, Poll, Waker};
+
 use crossbeam_queue::ArrayQueue;
 
 use crate::alloc::collections::{BTreeMap, VecDeque};
@@ -26,8 +28,12 @@ impl Executor {
         }
     }
 
-    pub fn spawn(&mut self, task: Task) {
+    pub fn add_task(&mut self, task: Task) {
         self.task_list.push_back(task)
+    }
+
+    pub fn spawn(&mut self, task: impl Future<Output=()> + 'static) {
+        self.task_list.push_back(Task::new(task))
     }
 
     pub fn run_ready_task(&mut self) {

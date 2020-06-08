@@ -1,7 +1,8 @@
 use crate::bits::EferFlags;
-use crate::bits::flags::LocalAPICFlags;
 use crate::ia_32e::instructions::register::{rdmsr, wrmsr};
 use crate::ia_32e::VirtAddr;
+use crate::bits::flags::LocalAPICFlags;
+
 
 #[derive(Debug)]
 pub struct MSR(u32);

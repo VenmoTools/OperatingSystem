@@ -1,8 +1,8 @@
 use crate::bits::PageTableFlags;
 use crate::ia_32e::cpu::control::CR3;
 use crate::ia_32e::paging::{Frame, FrameAllocator, NotGiantPageSize, Page, Page1GB, Page2MB, Page4KB, PageIndex, PageSize, PageTable, PageTableEntry, UnusedFrame};
-use crate::ia_32e::paging::mapper::{MapAllSize, Mapper, MapperFlush};
-use crate::ia_32e::paging::result::{FlagUpdateError, FrameError, MapToError, TranslateError, TranslationResult, UnmapError};
+use crate::ia_32e::paging::mapper::{Mapper, MapperFlush, MapAllSize};
+use crate::ia_32e::paging::result::{FlagUpdateError, FrameError, MapToError, TranslateError, UnmapError, TranslationResult};
 use crate::ia_32e::VirtAddr;
 
 #[derive(Debug)]
@@ -135,7 +135,7 @@ impl<'a> RecursivePageTable<'a> {
         let p3 = unsafe { Self::create_next_table(&mut p4[page.p4_index()], p3_page, allocator)? };
 
         if !p3[page.p3_index()].is_unused() {
-            return Err(MapToError::PageAlreadyMapped(unsafe { UnusedFrame::new(frame) }));
+            return Err(MapToError::PageAlreadyMapped(unsafe{UnusedFrame::new(frame)}));
         }
         p3[page.p3_index()].set_addr(frame.start_address(), flags | Flags::HUGE_PAGE);
 
@@ -164,7 +164,7 @@ impl<'a> RecursivePageTable<'a> {
         let p2 = unsafe { Self::create_next_table(&mut p3[page.p3_index()], p2_page, allocator)? };
 
         if !p2[page.p2_index()].is_unused() {
-            return Err(MapToError::PageAlreadyMapped(unsafe { UnusedFrame::new(frame) }));
+            return Err(MapToError::PageAlreadyMapped(unsafe{UnusedFrame::new(frame)}));
         }
         p2[page.p2_index()].set_addr(frame.start_address(), flags | Flags::HUGE_PAGE);
 
@@ -195,7 +195,7 @@ impl<'a> RecursivePageTable<'a> {
         let p1 = unsafe { Self::create_next_table(&mut p2[page.p2_index()], p1_page, allocator)? };
 
         if !p1[page.p1_index()].is_unused() {
-            return Err(MapToError::PageAlreadyMapped(unsafe { UnusedFrame::new(frame) }));
+            return Err(MapToError::PageAlreadyMapped(unsafe{UnusedFrame::new(frame)}));
         }
         p1[page.p1_index()].set_frame(frame, flags);
 

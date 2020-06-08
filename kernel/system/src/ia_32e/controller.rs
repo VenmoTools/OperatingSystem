@@ -1,13 +1,12 @@
-use core::marker::PhantomData;
-
-use crate::alloc::string::String;
-use crate::bits::IrqFlags;
-use crate::ia_32e::ApicInfo;
+use crate::ia_32e::xapic::xApic;
+use crate::ia_32e::x2apic::local_apic::LocalApic;
 use crate::ia_32e::cpu::ChainedPics;
 use crate::ia_32e::x2apic::io_apic::{IoApic, IrqMode};
-use crate::ia_32e::x2apic::local_apic::LocalApic;
-use crate::ia_32e::x2apic::register::{IpiAllShorthand, TimerDivide, TimerMode};
-use crate::ia_32e::xapic::xApic;
+use crate::bits::IrqFlags;
+use crate::ia_32e::x2apic::register::{TimerMode, TimerDivide, IpiAllShorthand};
+use crate::ia_32e::ApicInfo;
+use crate::alloc::string::String;
+use core::marker::PhantomData;
 
 pub trait ControllerType {
     const DISPLAY_STR: &'static str;
@@ -16,7 +15,7 @@ pub trait ControllerType {
 
 pub struct XPAIC(xApic);
 
-pub struct X2APIC(LocalApic, IoApic);
+pub struct X2APIC(LocalApic,IoApic);
 
 pub struct PIC(ChainedPics);
 
@@ -69,8 +68,8 @@ impl<T: ControllerType> ProgrammableController<T> {
 }
 
 impl ProgrammableController<X2APIC> {
-    fn new(t: X2APIC) -> Self {
-        Self {
+    fn new(t: X2APIC) ->Self {
+        Self{
             local_apic: Some(t.0),
             io_apic: Some(t.1),
             xapic: None,
@@ -187,12 +186,12 @@ impl ProgrammableController<X2APIC> {
 
 impl ProgrammableController<PIC> {
     fn new(t: PIC) -> Self {
-        Self {
+        Self{
             local_apic: None,
             io_apic: None,
             xapic: None,
             pic: Some(t.0),
-            _mark: Default::default(),
+            _mark: Default::default()
         }
     }
 
@@ -301,12 +300,12 @@ impl ProgrammableController<PIC> {
 
 impl ProgrammableController<XPAIC> {
     fn new(t: XPAIC) -> Self {
-        Self {
+        Self{
             local_apic: None,
             io_apic: None,
             xapic: Some(t.0),
             pic: None,
-            _mark: PhantomData,
+            _mark:PhantomData
         }
     }
 

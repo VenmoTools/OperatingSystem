@@ -13,13 +13,13 @@
 extern crate alloc;
 
 
-use alloc::string::String;
-#[cfg(feature = "efi")]
-use alloc::string::ToString;
-use alloc::vec::Vec;
-#[cfg(feature = "mutiboot")]
-use multiboot2::{BootInformation, ElfSection, ElfSectionFlags, ElfSectionType, MemoryAreaType};
 pub use mutex::Mutex;
+#[cfg(feature = "mutiboot")]
+use multiboot2::{BootInformation, MemoryAreaType, ElfSection, ElfSectionType, ElfSectionFlags};
+use crate::ia_32e::paging::{MemorySpace, MemoryArea};
+#[allow(unused_imports)]
+use crate::ia_32e::paging::MemoryType;
+
 #[cfg(feature = "efi")]
 use uefi::table::boot::{MemoryMapIter, MemoryType as UefiMem};
 #[cfg(feature = "efi")]
@@ -27,11 +27,11 @@ use xmas_elf::{
     ElfFile, P64,
     sections::{SectionHeader, ShType},
 };
-
 use crate::bits::KernelSectionFlags;
-use crate::ia_32e::paging::{MemoryArea, MemorySpace};
-#[allow(unused_imports)]
-use crate::ia_32e::paging::MemoryType;
+use alloc::string::String;
+#[cfg(feature = "efi")]
+use alloc::string::ToString;
+use alloc::vec::Vec;
 
 pub mod bits;
 mod mutex;
@@ -39,6 +39,7 @@ pub mod ia_32e;
 pub mod result;
 pub mod devices;
 pub mod macros;
+pub mod syscall;
 #[macro_use]
 pub mod console;
 pub mod buddy_system_allocator;
@@ -58,13 +59,13 @@ pub struct KernelArgs {
 }
 
 pub struct KernelArea {
-    start_addr: u64,
-    end_addr: u64,
-    size: u64,
-    name: String,
-    align_by: u64,
-    flags: KernelSectionFlags,
-    section_ty: KernelSectionType,
+    pub start_addr: u64,
+    pub end_addr: u64,
+    pub size: u64,
+    pub name: String,
+    pub align_by: u64,
+    pub flags: KernelSectionFlags,
+    pub section_ty: KernelSectionType,
 }
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]

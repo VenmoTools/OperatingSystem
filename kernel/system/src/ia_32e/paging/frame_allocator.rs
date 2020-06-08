@@ -1,11 +1,9 @@
+use super::{FrameAllocator, PageSize, Page4KB};
 use alloc::vec::Vec;
-use core::alloc::Layout;
-
-use crate::ia_32e::paging::{Frame, MemorySpace, MemoryType, UnusedFrame};
+use crate::ia_32e::paging::{Frame, UnusedFrame, MemorySpace, MemoryType};
 use crate::ia_32e::PhysAddr;
-
-use super::{FrameAllocator, Page4KB, PageSize};
-use super::MemoryArea;
+use core::alloc::Layout;
+use super::{ MemoryArea};
 
 pub trait MemoryAreaManagement {
     fn add_area(&mut self, start_addr: u64, end_addr: u64, ty: MemoryType, len: u64);
@@ -122,7 +120,7 @@ impl BumpAllocator {
             // 过滤出所有大于当前内存区域
             Frame::include_address(PhysAddr::new(mem_area)) >= self.next_frame
             // 找出地址最低的内存区域
-        }).min_by_key(|area| area.start_address()).and_then(|f| {
+        }).min_by_key(|area| area.start_address()).and_then(|f|{
             Some(*f)
         });
 

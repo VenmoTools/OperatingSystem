@@ -1,8 +1,8 @@
-use core::alloc::Layout;
 use core::ops::{Deref, DerefMut};
 
 use super::frame::Frame;
 use super::page::{Page4KB, PageSize};
+use core::alloc::Layout;
 
 /// 物理帧分配器
 pub unsafe trait FrameAllocator<S: PageSize> {
@@ -17,7 +17,7 @@ pub unsafe trait FrameAllocator<S: PageSize> {
     // 分配指定数量的物理帧
     fn alloc_size(&mut self, size: Layout) -> Option<UnusedFrame<S>>;
     /// 释放指定数量物理帧
-    fn dealloc_size(&mut self, frame: Frame, count: usize);
+    fn dealloc_size(&mut self,frame:Frame,count:usize);
 }
 
 #[derive(Debug)]

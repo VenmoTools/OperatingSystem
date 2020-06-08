@@ -1,6 +1,6 @@
 ///! 启用或关闭中断，以及中断的操作
 #[inline]
-pub fn system_pause() {
+pub fn system_pause(){
     unsafe { llvm_asm!("pause" : : : : "intel", "volatile"); }
 }
 
@@ -45,15 +45,15 @@ pub fn hlt() {
 
 /// Atomically enable interrupts and put the CPU to sleep
 #[inline]
-pub fn enable_interrupt_and_hlt() {
-    unsafe {
+pub fn enable_interrupt_and_hlt(){
+    unsafe{
         llvm_asm!("sti;hlt"::::"volatile")
     }
 }
 
 #[inline]
-pub fn enable_interrupt_and_nop() {
-    unsafe {
+pub fn enable_interrupt_and_nop(){
+    unsafe{
         llvm_asm!("sti;nop"::::"volatile")
     }
 }

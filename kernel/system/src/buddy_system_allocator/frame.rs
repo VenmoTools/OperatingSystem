@@ -1,8 +1,9 @@
+use super::prev_power_of_two;
 use alloc::collections::BTreeSet;
 use core::cmp::min;
 use core::ops::Range;
 
-use super::prev_power_of_two;
+
 
 /// A frame allocator that uses buddy system,
 /// requiring a global allocator

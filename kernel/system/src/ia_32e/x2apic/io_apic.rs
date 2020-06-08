@@ -1,8 +1,9 @@
-use crate::bits::flags::IrqFlags;
-use crate::ia_32e::x2apic::consts::{IOAPIC_ARBITRATION, IOAPIC_ID, IOAPIC_TABLE_BASE, IOAPIC_VERSION, IRQ_MASK_BIT, IRQ_MODE_MASK};
 /// this code base on https://github.com/kwzhao/x2apic-rs
 
 use crate::ia_32e::x2apic::ioapic_register::IoApicRegisters;
+use crate::bits::flags::IrqFlags;
+use crate::ia_32e::x2apic::consts::{IRQ_MODE_MASK, IRQ_MASK_BIT, IOAPIC_TABLE_BASE, IOAPIC_ID, IOAPIC_VERSION, IOAPIC_ARBITRATION};
+
 
 /// IOAPIC interrupt modes.
 #[derive(Debug)]
@@ -105,7 +106,7 @@ impl IoApic {
     }
 
     /// Enable interrupt number `irq` on the CPUs specified by `dest`.
-    pub unsafe fn enable_irq(&mut self, irq: u8, dest: u32, mode: IrqMode, options: IrqFlags) {
+    pub unsafe fn enable_irq(&mut self, irq: u8, dest: u32, mode: IrqMode, options: IrqFlags, ) {
         let lo = lo(irq);
         let hi = hi(irq);
 

@@ -1,7 +1,6 @@
 use core::fmt;
 
 use crate::bits::{BitOpt, DescriptorFlags};
-
 use super::super::Hex;
 use super::tss::TaskStateSegment;
 

@@ -1,12 +1,11 @@
-use alloc::vec::Vec;
 pub use allocator::{FrameAllocator, UnusedFrame};
 pub use frame::Frame;
-use lazy_static::lazy_static;
-pub use page::{NotGiantPageSize, Page, Page1GB, Page2MB, Page4KB, PageRange, PageRangeInclude, PageSize};
+pub use page::{NotGiantPageSize, Page, Page1GB, Page2MB, Page4KB, PageSize, PageRange, PageRangeInclude};
 pub use page_ops::{PageIndex, PageOffset};
 pub use page_table::{ENTRY_COUNT, PageTable, PageTableEntry};
-
 use crate::ia_32e::PhysAddr;
+use lazy_static::lazy_static;
+use alloc::vec::Vec;
 
 // use crate::mutex::Mutex;
 ///! 提供了内存分页功能
@@ -144,7 +143,6 @@ pub struct MemoryArea {
     pub end_addr: u64,
     pub length: u64,
     pub ty: MemoryType,
-    pub acpi: u32,
 }
 
 impl MemoryArea {
@@ -154,7 +152,6 @@ impl MemoryArea {
             end_addr,
             ty,
             length: len,
-            acpi: 0,
         }
     }
 

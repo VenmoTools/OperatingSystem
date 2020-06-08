@@ -1,7 +1,7 @@
-use bitflags::_core::alloc::AllocErr;
-pub use error::mem::{MemErrorKind, MemoryError};
+pub use error::mem::{MemoryError, MemErrorKind};
 
 use crate::alloc::string::String;
+use bitflags::_core::alloc::AllocErr;
 
 pub mod error;
 
@@ -85,15 +85,16 @@ impl ProcessError {
             msg,
             no: match kind {
                 ProcessErrorKind::TryAgain => 11,
-                ProcessErrorKind::CrateNewProcessFailed => 12
+                ProcessErrorKind::CrateNewProcessFailed=>12
             },
         }
     }
 }
 
 
-impl From<AllocErr> for Error {
+
+impl From<AllocErr> for Error{
     fn from(_: AllocErr) -> Self {
-        Error::new_memory(MemErrorKind::AllocateFiled, String::from("memory allocation failed"))
+        Error::new_memory(MemErrorKind::AllocateFiled,String::from("memory allocation failed"))
     }
 }

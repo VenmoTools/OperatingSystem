@@ -4,6 +4,8 @@ use system::ia_32e::paging::frame_allocator::MemoryAreaManagement;
 use system::SystemInformation;
 
 use crate::descriptor::{init_gdt, init_idt, init_tss};
+use crate::devices::device_init;
+use crate::interrupt::syscall;
 use crate::memory::{add_to_heap, FRAME_ALLOCATOR, init_frame_allocator, RECU_PAGE_TABLE};
 use crate::process::{init_process, process_mut};
 use crate::utils::initialize_apic;
@@ -29,6 +31,8 @@ impl Initializer {
             add_to_heap(1048576, 134086656)
         }
         println!("set up buddy system allocator... done");
+        device_init();
+        println!("devices init... done");
         // init apic
         disable_interrupt();
         #[cfg(feature = "pic")]
@@ -55,6 +59,10 @@ impl Initializer {
                 adder.add_area(area.start_addr, area.end_addr, area.ty, area.length);
             }
         }
+        println!("init syscall feature");
+        unsafe {
+            syscall::init()
+        };
         println!("init frame allocator... done");
         init_process();
         println!("init first process... done");
@@ -65,13 +73,13 @@ impl Initializer {
                 println!("new process1 {}", i);
             }
         });
-        create_process(|| {
-            let mut i = 1;
-            while i < 5 {
-                i += 1;
-                println!("new process2 {}", i);
-            }
-        });
+        // create_process(||{
+        //     let mut i = 1;
+        //     while i < 5{
+        //         i += 1;
+        //         println!("new process2 {}",i);
+        //     }
+        // });
     }
 }
 

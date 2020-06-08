@@ -1,6 +1,7 @@
 use alloc::sync::{Arc, Weak};
-use bitflags::_core::alloc::Layout;
 use core::intrinsics;
+
+use bitflags::_core::alloc::Layout;
 use spin::Mutex;
 use system::bits::flags::PageTableFlags;
 use system::ia_32e::{PhysAddr, VirtAddr};

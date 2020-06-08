@@ -1,4 +1,5 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
+
 use system::atomic_type;
 
 atomic_type!(ProcessId,usize,AtomicProcessId,AtomicUsize);

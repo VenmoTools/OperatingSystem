@@ -1,10 +1,10 @@
-use crate::bits::BitOpt;
-use crate::bits::flags::LocalAPICFlags;
-use crate::ia_32e::ApicInfo;
-use crate::ia_32e::x2apic::consts::{BASE_APIC_ENABLE, BASE_BSP, BASE_X2APIC_ENABLE, ICR_DELIVERY_MODE, ICR_DEST_SHORTHAND, ICR_DESTINATION, ICR_DESTINATION_MODE, ICR_LEVEL, ICR_VECTOR, LVT_ERROR_VECTOR, LVT_TIMER_MASK, LVT_TIMER_MODE, LVT_TIMER_VECTOR, SIVR_APIC_SOFTWARE_ENABLE, SIVR_VECTOR, TDCR_DIVIDE_VALUE, VERSION_EOI_BCAST_SUPPRESSION, VERSION_MAX_LVT_ENTRY, VERSION_NR};
 /// this code base on https://github.com/kwzhao/x2apic-rs
 
-use crate::ia_32e::x2apic::register::{IpiAllShorthand, IpiDeliveryMode, IpiDestMode, LocalApicRegisters, TimerDivide, TimerMode};
+use crate::ia_32e::x2apic::register::{TimerMode, TimerDivide, IpiDestMode, LocalApicRegisters, IpiDeliveryMode, IpiAllShorthand};
+use crate::ia_32e::x2apic::consts::{ICR_DEST_SHORTHAND, ICR_DESTINATION, TDCR_DIVIDE_VALUE, LVT_TIMER_MODE, LVT_TIMER_MASK, VERSION_MAX_LVT_ENTRY, VERSION_EOI_BCAST_SUPPRESSION, VERSION_NR, BASE_APIC_ENABLE, ICR_VECTOR, ICR_DELIVERY_MODE, ICR_DESTINATION_MODE, ICR_LEVEL, BASE_X2APIC_ENABLE, SIVR_APIC_SOFTWARE_ENABLE, LVT_TIMER_VECTOR, LVT_ERROR_VECTOR, SIVR_VECTOR, BASE_BSP};
+use crate::bits::flags::LocalAPICFlags;
+use crate::bits::BitOpt;
+use crate::ia_32e::ApicInfo;
 
 /// The local APIC structure.
 #[derive(Debug)]
@@ -19,7 +19,7 @@ pub struct LocalApic {
     regs: LocalApicRegisters,
 }
 
-impl From<ApicInfo> for LocalApic {
+impl From<ApicInfo> for LocalApic{
     fn from(info: ApicInfo) -> Self {
         LocalApic {
             timer_vector: info.timer_vector.expect("missing timer vector"),

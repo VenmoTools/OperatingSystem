@@ -1,7 +1,7 @@
 ;************************************************************
 ;*          FileName    : long_mode                         *
 ;*          Author      : VenmoSnake                        *
-;*          ProjectName : yacc                              *
+;*          ProjectName : boot                              *
 ;*          Time        : 2020/4/25 : 1:16                  *
 ;************************************************************
 
@@ -19,6 +19,4 @@ long_mode_entry:
     mov es, ax
     mov fs, ax
     mov gs, ax
-    mov rax, 0x2f592f412f4b2f4f
-    mov qword [0xb8000], rax
 	call kmain

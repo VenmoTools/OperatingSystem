@@ -1,10 +1,10 @@
-use bit::BitIndex;
-use core::ops::Range;
-use paste;
-
 /// this code base on https://github.com/kwzhao/x2apic-rs
 use crate::ia_32e::cpu::apic::MSR;
-use crate::ia_32e::cpu::msr::{IA32_APIC_BASE, IA32_X2APIC_APICID, IA32_X2APIC_CUR_COUNT, IA32_X2APIC_DIV_CONF, IA32_X2APIC_EOI, IA32_X2APIC_ESR, IA32_X2APIC_ICR, IA32_X2APIC_INIT_COUNT, IA32_X2APIC_IRR0, IA32_X2APIC_IRR1, IA32_X2APIC_IRR2, IA32_X2APIC_IRR3, IA32_X2APIC_IRR4, IA32_X2APIC_IRR5, IA32_X2APIC_IRR6, IA32_X2APIC_IRR7, IA32_X2APIC_ISR0, IA32_X2APIC_ISR1, IA32_X2APIC_ISR2, IA32_X2APIC_ISR3, IA32_X2APIC_ISR4, IA32_X2APIC_ISR5, IA32_X2APIC_ISR6, IA32_X2APIC_ISR7, IA32_X2APIC_LDR, IA32_X2APIC_LVT_ERROR, IA32_X2APIC_LVT_LINT0, IA32_X2APIC_LVT_LINT1, IA32_X2APIC_LVT_PMI, IA32_X2APIC_LVT_THERMAL, IA32_X2APIC_LVT_TIMER, IA32_X2APIC_PPR, IA32_X2APIC_SELF_IPI, IA32_X2APIC_SIVR, IA32_X2APIC_TMR0, IA32_X2APIC_TMR1, IA32_X2APIC_TMR2, IA32_X2APIC_TMR3, IA32_X2APIC_TMR4, IA32_X2APIC_TMR5, IA32_X2APIC_TMR6, IA32_X2APIC_TMR7, IA32_X2APIC_TPR, IA32_X2APIC_VERSION};
+use crate::ia_32e::cpu::msr::{IA32_APIC_BASE, IA32_X2APIC_APICID, IA32_X2APIC_VERSION, IA32_X2APIC_TPR, IA32_X2APIC_PPR, IA32_X2APIC_EOI, IA32_X2APIC_LDR, IA32_X2APIC_SIVR, IA32_X2APIC_ISR0, IA32_X2APIC_ISR1, IA32_X2APIC_ISR2, IA32_X2APIC_ISR3, IA32_X2APIC_ISR4, IA32_X2APIC_ISR5, IA32_X2APIC_ISR6, IA32_X2APIC_ISR7, IA32_X2APIC_TMR0, IA32_X2APIC_TMR1, IA32_X2APIC_TMR2, IA32_X2APIC_TMR3, IA32_X2APIC_TMR4, IA32_X2APIC_TMR5, IA32_X2APIC_TMR6, IA32_X2APIC_TMR7, IA32_X2APIC_IRR0, IA32_X2APIC_IRR1, IA32_X2APIC_IRR2, IA32_X2APIC_IRR3, IA32_X2APIC_IRR4, IA32_X2APIC_IRR5, IA32_X2APIC_IRR6, IA32_X2APIC_IRR7, IA32_X2APIC_ESR, IA32_X2APIC_ICR, IA32_X2APIC_LVT_TIMER, IA32_X2APIC_LVT_THERMAL, IA32_X2APIC_LVT_PMI, IA32_X2APIC_LVT_LINT0, IA32_X2APIC_LVT_LINT1, IA32_X2APIC_LVT_ERROR, IA32_X2APIC_INIT_COUNT, IA32_X2APIC_CUR_COUNT, IA32_X2APIC_DIV_CONF, IA32_X2APIC_SELF_IPI};
+use core::ops::Range;
+use paste;
+use bit::BitIndex;
+
 
 #[derive(Debug)]
 pub struct LocalApicRegisters {
@@ -226,7 +226,7 @@ pub enum TimerMode {
     TscDeadline = 0b10,
 }
 
-impl Into<u64> for TimerMode {
+impl Into<u64> for TimerMode{
     fn into(self) -> u64 {
         self as u64
     }
@@ -254,7 +254,7 @@ pub enum TimerDivide {
 }
 
 
-impl Into<u64> for TimerDivide {
+impl Into<u64> for TimerDivide{
     fn into(self) -> u64 {
         self as u64
     }
@@ -269,7 +269,7 @@ pub enum IpiDestMode {
     Logical = 1,
 }
 
-impl Into<u64> for IpiDestMode {
+impl Into<u64> for IpiDestMode{
     fn into(self) -> u64 {
         self as u64
     }
@@ -293,7 +293,7 @@ pub enum IpiDeliveryMode {
     StartUp = 0b110,
 }
 
-impl Into<u64> for IpiDeliveryMode {
+impl Into<u64> for IpiDeliveryMode{
     fn into(self) -> u64 {
         self as u64
     }
@@ -309,7 +309,7 @@ pub enum IpiAllShorthand {
     AllExcludingSelf = 0b11,
 }
 
-impl Into<u64> for IpiAllShorthand {
+impl Into<u64> for IpiAllShorthand{
     fn into(self) -> u64 {
         self as u64
     }

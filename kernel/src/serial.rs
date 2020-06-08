@@ -3,7 +3,7 @@
 
 use spin::Mutex;
 use system::console::Writer;
-use uart_16550::SerialPort;
+use system::ia_32e::serial::SerialPort;
 
 use lazy_static::lazy_static;
 
@@ -49,16 +49,4 @@ pub fn _print(arg: ::core::fmt::Arguments) {
     });
 }
 
-#[macro_export]
-macro_rules! print {
-    ($($arg:tt)*) => {
-        $crate::serial::_print(format_args!($($arg)*));
-    };
-}
 
-#[macro_export]
-macro_rules! println {
-    ()=>($crate::print!("\n"));
-    ($fmt:expr) => ($crate::print!(concat!($fmt,"\n")));
-    ($fmt:expr, $($args:tt)*) => ($crate::print!(concat!($fmt,"\n"),$($args)*));
-}

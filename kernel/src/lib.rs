@@ -16,19 +16,21 @@ extern crate system;
 
 
 use core::panic::PanicInfo;
-use system::ia_32e::instructions::interrupt::{enable_interrupt_and_hlt, enable_interrupt_and_nop};
-use system::ia_32e::instructions::segmention::cs;
+
 #[cfg(feature = "efi")]
 use system::KernelArgs;
 use system::SystemInformation;
 #[cfg(feature = "efi")]
 use uefi::table::boot::{AllocateType, MemoryMapIter, MemoryMapKey, MemoryType};
 
+use crate::async_process::Executor;
+use crate::devices::keyboard::print_scan_code;
+use crate::devices::vga::clear_screen;
 use crate::initializer::Initializer;
-use crate::process::scheduler::switch;
 use crate::utils::loop_hlt;
 
 #[macro_use]
+mod macros;
 mod serial;
 mod memory;
 mod descriptor;
@@ -39,14 +41,15 @@ mod process;
 mod async_process;
 mod devices;
 mod interrupt;
+mod syscall;
+mod tests;
+
 
 #[cfg(feature = "efi")]
 #[no_mangle]
 extern "C" fn kmain(info_addr: usize) -> ! {
     println!("uefi entry");
-    // 指针地址会偏移？？
-    let addr = info_addr - 64;
-    let info = SystemInformation::new(addr);
+    let info = SystemInformation::new(info_addr);
     Initializer::new(info).initialize();
     loop_hlt()
 }
@@ -56,24 +59,20 @@ extern "C" fn kmain(info_addr: usize) -> ! {
 #[no_mangle]
 extern "C" fn kmain(info_addr: usize) -> ! {
     println!("entry kernel");
+    clear_screen();
     let info = SystemInformation::new(info_addr);
     Initializer::new(info).initialize();
-    let s = cs();
-    println!("prev {:?}", s.rpl());
-
-    loop {
-        if switch() {
-            enable_interrupt_and_nop();
-        } else {
-            enable_interrupt_and_hlt();
-        }
-    }
+    let mut executor = Executor::new();
+    executor.spawn(print_scan_code());
+    executor.run();
+    loop_hlt()
 }
-
 
 #[panic_handler]
 pub fn panic_handler(info: &PanicInfo) -> ! {
     println!("{:?}", info);
     loop_hlt()
 }
+
+
 

@@ -30,7 +30,7 @@ iso: kernel.bin
 	cp $(TEMP_DIR)/$< $(isofile)/boot/$<
 	cp $(source)/grub.cfg $(isofile)/boot/grub
 	grub-mkrescue -o os.iso $(isofile)
-
+# sudo apt-get install xorriso sudo apt-get install mtools
 kernel:
 	cargo xbuild
 

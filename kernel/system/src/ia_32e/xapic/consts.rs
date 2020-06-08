@@ -63,68 +63,42 @@ FEE0 03F0H Reserved
 
 pub(crate) const CMOS_PORT: u16 = 0x70;
 pub(crate) const CMOS_RETURN: u16 = 0x71;
-pub(crate) const ID: u32 = 0x0020;
-// ID
-pub(crate) const VER: u32 = 0x0030;
-// Version
-pub(crate) const TPR: u32 = 0x0080;
-// Task Priority
-pub(crate) const EOI: u32 = 0x00B0;
-// EOI
-pub(crate) const SVR: u32 = 0x00F0;
-// Spurious Interrupt Vector
-pub(crate) const ENABLE: u32 = 0x00000100;
-// Unit Enable
-pub(crate) const ESR: u32 = 0x0280;
-// Error Status
-pub(crate) const ICRLO: u32 = 0x0300;
-// Interrupt Command
-pub(crate) const INIT: u32 = 0x00000500;
-// INIT/RESET
-pub(crate) const STARTUP: u32 = 0x00000600;
-// Startup IPI
-pub(crate) const DELIVS: u32 = 0x00001000;
-// Delivery status
-pub(crate) const ASSERT: u32 = 0x00004000;
-// Assert interrupt (vs deassert)
-pub(crate) const DEASSERT: u32 = 0x00000000;
-pub(crate) const LEVEL: u32 = 0x00008000;
-// Level triggered
-pub(crate) const BCAST: u32 = 0x00080000;
-// Send to all APICs, including self.
-pub(crate) const BUSY: u32 = 0x00001000;
-pub(crate) const FIXED: u32 = 0x00000000;
-pub(crate) const ICRHI: u32 = 0x0310;
-// Interrupt Command [63:32]
-pub(crate) const TIMER: u32 = 0x0320;
-// Local Vector Table 0 (TIMER)
-pub(crate) const X1: u32 = 0x0000000B;
-// divide counts by 1
-pub(crate) const PERIODIC: u32 = 0x00020000;
-// Periodic
-pub(crate) const PCINT: u32 = 0x0340;
-// Performance Counter LVT
-pub(crate) const LINT0: u32 = 0x0350;
-// Local Vector Table 1 (LINT0)
-pub(crate) const LINT1: u32 = 0x0360;
-// Local Vector Table 2 (LINT1)
-pub(crate) const ERROR: u32 = 0x0370;
-// Local Vector Table 3 (ERROR)
-pub(crate) const MASKED: u32 = 0x00010000;
-// Interrupt masked
-pub(crate) const TICR: u32 = 0x0380;
-// Timer Initial Count
-pub(crate) const TCCR: u32 = 0x0390;
-// Timer Current Count
-pub(crate) const TDCR: u32 = 0x03E0;       // Timer Divide Configuration
+pub(crate) const ID      : u32 = 0x0020;       // ID
+pub(crate) const VER     : u32 = 0x0030;       // Version
+pub(crate) const TPR     : u32 = 0x0080;       // Task Priority
+pub(crate) const EOI     : u32 = 0x00B0;       // EOI
+pub(crate) const SVR     : u32 = 0x00F0;       // Spurious Interrupt Vector
+pub(crate) const ENABLE  : u32 =   0x00000100;     // Unit Enable
+pub(crate) const ESR     : u32 = 0x0280;       // Error Status
+pub(crate) const ICRLO   : u32 = 0x0300;       // Interrupt Command
+pub(crate) const INIT    : u32 =   0x00000500;     // INIT/RESET
+pub(crate) const STARTUP : u32 =   0x00000600;     // Startup IPI
+pub(crate) const DELIVS  : u32 =   0x00001000;     // Delivery status
+pub(crate) const ASSERT  : u32 =   0x00004000;     // Assert interrupt (vs deassert)
+pub(crate) const DEASSERT: u32 =   0x00000000;
+pub(crate) const LEVEL   : u32 =   0x00008000;     // Level triggered
+pub(crate) const BCAST   : u32 =   0x00080000;     // Send to all APICs, including self.
+pub(crate) const BUSY    : u32 =   0x00001000;
+pub(crate) const FIXED   : u32 =   0x00000000;
+pub(crate) const ICRHI   : u32 = 0x0310;       // Interrupt Command [63:32]
+pub(crate) const TIMER   : u32 = 0x0320;       // Local Vector Table 0 (TIMER)
+pub(crate) const X1      : u32 =   0x0000000B;     // divide counts by 1
+pub(crate) const PERIODIC: u32 =   0x00020000;     // Periodic
+pub(crate) const PCINT   : u32 = 0x0340;       // Performance Counter LVT
+pub(crate) const LINT0   : u32 = 0x0350;       // Local Vector Table 1 (LINT0)
+pub(crate) const LINT1   : u32 = 0x0360;       // Local Vector Table 2 (LINT1)
+pub(crate) const ERROR   : u32 = 0x0370;       // Local Vector Table 3 (ERROR)
+pub(crate) const MASKED  : u32 =   0x00010000;     // Interrupt masked
+pub(crate) const TICR    : u32 = 0x0380;       // Timer Initial Count
+pub(crate) const TCCR    : u32 = 0x0390;       // Timer Current Count
+pub(crate) const TDCR    : u32 = 0x03E0;       // Timer Divide Configuration
 
-pub(crate) const T_IRQ0: u32 = 32;
-// IRQ 0 corresponds to int T_IRQ
-pub(crate) const IRQ_TIMER: u32 = 0;
-pub(crate) const IRQ_KBD: u32 = 1;
-pub(crate) const IRQ_COM1: u32 = 4;
-pub(crate) const IRQ_IDE: u32 = 14;
-pub(crate) const IRQ_ERROR: u32 = 19;
+pub(crate) const T_IRQ0      : u32 = 32;       // IRQ 0 corresponds to int T_IRQ
+pub(crate) const IRQ_TIMER   : u32 =  0;
+pub(crate) const IRQ_KBD     : u32 =  1;
+pub(crate) const IRQ_COM1    : u32 =  4;
+pub(crate) const IRQ_IDE     : u32 = 14;
+pub(crate) const IRQ_ERROR   : u32 = 19;
 pub(crate) const IRQ_SPURIOUS: u32 = 31;
 
 
