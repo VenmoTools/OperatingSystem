@@ -7,11 +7,11 @@ use std::process::{Command, exit, ExitStatus, Stdio};
 fn main() -> std::io::Result<()> {
     let work_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     // 1. build kernel
-    // check_status(kernel_build_step(work_dir)?);
+    check_status(kernel_build_step(work_dir)?);
     // 2. build efi file
-    // check_status(efi_build_step(work_dir)?);
+    check_status(efi_build_step(work_dir)?);
     // 3. copy file
-    // copy_file(work_dir)?;
+    copy_file(work_dir)?;
 
     run_qemu(work_dir);
     Ok(())
